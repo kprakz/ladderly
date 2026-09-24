@@ -20,7 +20,7 @@ cp .env.example .env.local
 
 ### Demo mode (free, no API key)
 
-With `DEMO_MODE=true` in `.env.local` (the default in `.env.example`), the app doesn't call the API. It streams built-in sample paths instead, so everything else (timeline, checkboxes, progress, history, dark mode) works for free.
+With `DEMO_MODE=true` in `.env.local` (the default in `.env.example`), or whenever no `ANTHROPIC_API_KEY` is set, the app doesn't call the API. A banner at the top of the page shows when demo mode is on. It streams built-in sample paths instead, so everything else (timeline, checkboxes, progress, history, dark mode) works for free.
 
 - Hand-written samples: **guitar**, **public speaking** and **python**. A topic containing one of those words gets that sample.
 - Any other topic gets a generic template with the topic's name filled in, marked `[Demo]` in its summary.
@@ -48,6 +48,14 @@ npm run dev      # development: http://localhost:3000
 ```bash
 npm run build && npm start   # production build
 ```
+
+## Deploy (free, demo mode)
+
+1. Push the repo to GitHub.
+2. On [vercel.com](https://vercel.com), sign in with GitHub, click **Add New → Project** and import the repo.
+3. Keep the default settings (Vercel detects Next.js) and click **Deploy**.
+
+Don't add an `ANTHROPIC_API_KEY` environment variable in Vercel. Without it the site stays in demo mode and can never make paid API calls.
 
 ## How it works
 

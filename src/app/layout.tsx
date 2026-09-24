@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { isDemoMode } from "@/lib/demo";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,7 +31,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-full bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">{children}</body>
+      <body className="min-h-full bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+        {isDemoMode() && (
+          <div className="bg-indigo-600 px-4 py-2 text-center text-sm text-white">
+            Demo version: full sample paths for <strong>guitar</strong>, <strong>public speaking</strong> and{" "}
+            <strong>python</strong>. Other topics get a general template.
+          </div>
+        )}
+        {children}
+      </body>
     </html>
   );
 }

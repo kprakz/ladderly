@@ -14,9 +14,6 @@ export async function POST(req: Request) {
     return Response.json({ error: parsed.error.issues[0]?.message ?? "Invalid request" }, { status: 400 });
   }
   if (isDemoMode()) return demoResponse(parsed.data.topic);
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return Response.json({ error: "Server is missing ANTHROPIC_API_KEY. See the README." }, { status: 500 });
-  }
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
