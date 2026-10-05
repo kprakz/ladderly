@@ -6,12 +6,24 @@ import type { PathRequest } from "@/lib/schema";
 const field =
   "rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-900";
 
+/**
+ * Form for the topic and the optional level, hours per week and goal.
+ * @param {Object} props
+ * @param {(req: PathRequest) => void} props.onSubmit Called with the cleaned-up request when the form is submitted.
+ * @param {boolean} props.disabled Disables the submit button (while a path is being generated).
+ * @returns {JSX.Element} The form.
+ */
 export function PathForm({ onSubmit, disabled }: { onSubmit: (req: PathRequest) => void; disabled: boolean }) {
   const [topic, setTopic] = useState("");
   const [level, setLevel] = useState("");
   const [hours, setHours] = useState("");
   const [goal, setGoal] = useState("");
 
+  /**
+   * Converts the form fields into a `PathRequest` (empty options become `undefined`, hours are clamped to 1–80).
+   * @param {React.FormEvent} e The submit event; its default page reload is prevented.
+   * @returns {void}
+   */
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!topic.trim()) return;

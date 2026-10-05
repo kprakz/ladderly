@@ -4,6 +4,13 @@ import { progressOf, type SavedPath } from "@/lib/storage";
 import { ProgressBar } from "./ProgressBar";
 import { StageCard } from "./StageCard";
 
+/**
+ * A full learning path: title, summary, overall progress, stage timeline, finish line and pitfalls.
+ * @param {Object} props
+ * @param {SavedPath} props.saved The saved path, including which checkpoint items are checked.
+ * @param {(key: string) => void} props.onToggle Called with a checkpoint key when a checkbox changes.
+ * @returns {JSX.Element} The path view.
+ */
 export function PathView({ saved, onToggle }: { saved: SavedPath; onToggle: (key: string) => void }) {
   const { path, request } = saved;
   const checked = new Set(saved.checked);

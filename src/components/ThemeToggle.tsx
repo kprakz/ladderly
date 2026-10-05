@@ -2,15 +2,23 @@
 
 import { useSyncExternalStore } from "react";
 
-const THEME_KEY = "pathfinder:theme";
+const THEME_KEY = "ladderly:theme";
 
-// The theme lives as a `.dark` class on <html> (set before paint by the script in layout.tsx).
+/**
+ * Watches the `.dark` class on `<html>` (set before paint by the script in layout.tsx).
+ * @param {() => void} onChange Called whenever the `<html>` class attribute changes.
+ * @returns {() => void} A function that stops watching.
+ */
 function subscribe(onChange: () => void) {
   const observer = new MutationObserver(onChange);
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
   return () => observer.disconnect();
 }
 
+/**
+ * Button that switches between light and dark mode and remembers the choice.
+ * @returns {JSX.Element} The toggle button (blank until the current theme is known in the browser).
+ */
 export function ThemeToggle() {
   const dark = useSyncExternalStore(
     subscribe,
@@ -18,6 +26,10 @@ export function ThemeToggle() {
     () => null,
   );
 
+  /**
+   * Flips the theme and saves it to localStorage.
+   * @returns {void}
+   */
   function toggle() {
     const next = !dark;
     document.documentElement.classList.toggle("dark", next);

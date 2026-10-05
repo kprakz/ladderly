@@ -1,11 +1,12 @@
 import type { LearningPath } from "./schema";
 
 /**
- * Demo mode: canned learning paths so the app can run without calling the API.
+ * Tells whether the app should serve built-in sample paths instead of calling the API.
  * On when DEMO_MODE=true, and always on when no ANTHROPIC_API_KEY is set,
- * so a deployment without a key can never make paid API calls.
+ * so a deployment without a key can never make paid API calls. Server-side only.
+ * @returns {boolean} `true` when demo mode is on.
  */
-export const isDemoMode = () => process.env.DEMO_MODE === "true" || !process.env.ANTHROPIC_API_KEY;
+export const isDemoMode = (): boolean => process.env.DEMO_MODE === "true" || !process.env.ANTHROPIC_API_KEY;
 
 const GUITAR: LearningPath = {
   summary: "Play common songs from chord charts with clean chords, steady rhythm and basic barre chords.",
@@ -142,7 +143,11 @@ const SAMPLES: { keywords: string[]; path: LearningPath }[] = [
   { keywords: ["python"], path: PYTHON },
 ];
 
-/** A generic path for topics without a hand-written sample. */
+/**
+ * Builds a generic 4-stage path for topics without a hand-written sample.
+ * @param {string} topic The topic the user typed; it is inserted into titles and text.
+ * @returns {LearningPath} A complete path that passes `LearningPathSchema`.
+ */
 function genericPath(topic: string): LearningPath {
   const t = topic.trim();
   return {
@@ -189,6 +194,11 @@ function genericPath(topic: string): LearningPath {
   };
 }
 
+/**
+ * Picks the demo path for a topic: a hand-written sample if a keyword matches, otherwise the generic template.
+ * @param {string} topic The topic the user typed (matching ignores case and looks anywhere in the text).
+ * @returns {LearningPath} The matching sample path, or a generic path for the topic.
+ */
 export function getDemoPath(topic: string): LearningPath {
   const lower = topic.toLowerCase();
   return SAMPLES.find((s) => s.keywords.some((k) => lower.includes(k)))?.path ?? genericPath(topic);

@@ -12,7 +12,14 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Desktop build output
+    "dist/**",
   ]),
+  // Electron's main process and build scripts are plain Node.js (CommonJS / ESM scripts).
+  {
+    files: ["electron/**/*.js", "scripts/**/*.cjs"],
+    rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
 ]);
 
 export default eslintConfig;

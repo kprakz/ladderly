@@ -7,7 +7,13 @@ import { LearningPathSchema, PathRequestSchema, type StreamEvent } from "@/lib/s
 // The SDK reads ANTHROPIC_API_KEY from the environment (.env.local). This file only runs on the server.
 const client = new Anthropic();
 
-export async function POST(req: Request) {
+/**
+ * `POST /api/path`: validates the request, then streams a learning path back as NDJSON events
+ * (`delta` chunks, then one `done` or `error`). Serves sample data in demo mode, otherwise calls Claude.
+ * @param {Request} req HTTP request whose JSON body is a `PathRequest`.
+ * @returns {Promise<Response>} A 400 JSON error for invalid input, otherwise a streaming `application/x-ndjson` response.
+ */
+export async function POST(req: Request): Promise<Response> {
   const body = await req.json().catch(() => null);
   const parsed = PathRequestSchema.safeParse(body);
   if (!parsed.success) {
@@ -15,10 +21,14 @@ export async function POST(req: Request) {
   }
   if (isDemoMode()) return demoResponse(parsed.data.topic);
 
-  const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
-      const send = (event: StreamEvent) => controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+      /**
+       * Writes one event to the response stream.
+       * @param {StreamEvent} event The `delta`, `done` or `error` event.
+       * @returns {void}
+       */
+      const send = (event: StreamEvent) => controller.enqueue(encodeEvent(event));
 
       try {
         const claude = client.beta.messages.stream(
@@ -65,17 +75,42 @@ export async function POST(req: Request) {
 }
 
 const NDJSON_HEADERS = { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store" };
+const encoder = new TextEncoder();
 
-/** Demo mode: stream a canned path in small chunks so the loading preview behaves like the real thing. */
-function demoResponse(topic: string) {
+/**
+ * Encodes one stream event as a line of newline-delimited JSON.
+ * @param {StreamEvent} event The `delta`, `done` or `error` event to send.
+ * @returns {Uint8Array} UTF-8 bytes of the JSON line, ending with a newline.
+ */
+function encodeEvent(event: StreamEvent): Uint8Array {
+  return encoder.encode(JSON.stringify(event) + "\n");
+}
+
+/**
+ * Waits for a given time.
+ * @param {number} ms Delay in milliseconds.
+ * @returns {Promise<void>} Resolves after the delay.
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Demo mode: streams a sample path in small chunks so the loading preview behaves like the real thing.
+ * @param {string} topic The requested topic, used to pick the sample.
+ * @returns {Response} A streaming NDJSON response ending in a `done` event.
+ */
+function demoResponse(topic: string): Response {
   const path = LearningPathSchema.parse(getDemoPath(topic));
   const json = JSON.stringify(path);
-  const encoder = new TextEncoder();
-  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
   const stream = new ReadableStream({
     async start(controller) {
-      const send = (event: StreamEvent) => controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+      /**
+       * Writes one event to the response stream.
+       * @param {StreamEvent} event The `delta`, `done` or `error` event.
+       * @returns {void}
+       */
+      const send = (event: StreamEvent) => controller.enqueue(encodeEvent(event));
       await sleep(600); // simulate "thinking"
       for (let i = 0; i < json.length; i += 60) {
         send({ type: "delta", text: json.slice(i, i + 60) });
@@ -88,6 +123,11 @@ function demoResponse(topic: string) {
   return new Response(stream, { headers: NDJSON_HEADERS });
 }
 
+/**
+ * Parses JSON without throwing.
+ * @param {string} text Text that should contain JSON.
+ * @returns {unknown} The parsed value, or `null` if the text is not valid JSON.
+ */
 function safeJsonParse(text: string): unknown {
   try {
     return JSON.parse(text);
@@ -96,8 +136,13 @@ function safeJsonParse(text: string): unknown {
   }
 }
 
+/**
+ * Turns an error from the Anthropic SDK (or anything else) into a message that is safe to show users.
+ * @param {unknown} err The caught error.
+ * @returns {string} A short, user-friendly explanation.
+ */
 function describeError(err: unknown): string {
-  if (err instanceof Anthropic.AuthenticationError) return "The Anthropic API key is invalid. Check .env.local.";
+  if (err instanceof Anthropic.AuthenticationError) return "The Anthropic API key is invalid. Check your API key settings.";
   if (err instanceof Anthropic.RateLimitError) return "Rate limited by the Anthropic API. Wait a moment and retry.";
   if (err instanceof Anthropic.APIConnectionError) return "Couldn't reach the Anthropic API. Check your connection.";
   if (err instanceof Anthropic.APIError) {

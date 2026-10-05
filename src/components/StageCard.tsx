@@ -12,6 +12,17 @@ type Props = {
   onToggle: (key: string) => void;
 };
 
+/**
+ * One stage in the timeline: number marker, title, duration, stage progress, concepts, practice,
+ * checkpoint checkboxes and resources.
+ * @param {Props} props
+ * @param {Stage} props.stage The stage content.
+ * @param {number} props.index Zero-based stage position (shown as index + 1, and used in checkbox keys).
+ * @param {boolean} props.isLast Hides the connecting timeline line after the final stage.
+ * @param {Set<string>} props.checked Keys of all checked checkpoint items in the path.
+ * @param {(key: string) => void} props.onToggle Called with a checkpoint key when its checkbox changes.
+ * @returns {JSX.Element} A timeline list item.
+ */
 export function StageCard({ stage, index, isLast, checked, onToggle }: Props) {
   const done = stage.checkpoint.filter((_, i) => checked.has(checkKey(index, i))).length;
   const total = stage.checkpoint.length;
@@ -95,6 +106,14 @@ export function StageCard({ stage, index, isLast, checked, onToggle }: Props) {
   );
 }
 
+/**
+ * A titled block inside a stage card.
+ * @param {Object} props
+ * @param {string} props.title Small uppercase heading.
+ * @param {string} [props.className] Extra CSS classes.
+ * @param {React.ReactNode} props.children The section content.
+ * @returns {JSX.Element} The section.
+ */
 function Section({ title, className = "", children }: { title: string; className?: string; children: React.ReactNode }) {
   return (
     <section className={className}>
@@ -104,6 +123,12 @@ function Section({ title, className = "", children }: { title: string; className
   );
 }
 
+/**
+ * A plain bulleted list.
+ * @param {Object} props
+ * @param {string[]} props.items The bullet texts.
+ * @returns {JSX.Element} An unordered list.
+ */
 function List({ items }: { items: string[] }) {
   return (
     <ul className="list-disc space-y-1 pl-4 text-sm marker:text-zinc-400">
