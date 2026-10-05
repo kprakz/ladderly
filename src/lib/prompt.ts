@@ -23,6 +23,11 @@ Guidelines:
 - The finish line is a single project or test that clearly proves competence.
 - If the topic is not a learnable skill, still do your best to interpret it as one.`;
 
+/**
+ * Builds the user message sent to Claude from the form input.
+ * @param {PathRequest} req The validated request: topic plus optional level, hours per week and goal.
+ * @returns {string} A short multi-line prompt describing the learner and asking for the path.
+ */
 export function buildUserPrompt(req: PathRequest): string {
   const lines = [`Skill: ${req.topic}`];
   if (req.level) lines.push(`Learner: ${LEVELS[req.level]}`);

@@ -1,5 +1,12 @@
 import { stageTitlesSoFar } from "@/lib/generate";
 
+/**
+ * Loading state: a spinner, then the stage titles as they stream in.
+ * @param {Object} props
+ * @param {string} props.topic The topic being generated.
+ * @param {string} props.partial The raw JSON text received so far (empty before the first chunk).
+ * @returns {JSX.Element} The loading panel.
+ */
 export function LoadingPanel({ topic, partial }: { topic: string; partial: string }) {
   const titles = stageTitlesSoFar(partial);
 
@@ -32,6 +39,13 @@ export function LoadingPanel({ topic, partial }: { topic: string; partial: strin
   );
 }
 
+/**
+ * Error state with a message and a Retry button.
+ * @param {Object} props
+ * @param {string} props.message User-friendly error text.
+ * @param {() => void} props.onRetry Called when Retry is clicked.
+ * @returns {JSX.Element} The error panel (announced to screen readers as an alert).
+ */
 export function ErrorPanel({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div

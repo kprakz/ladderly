@@ -1,8 +1,11 @@
 import type { LearningPath, PathRequest, StreamEvent } from "./schema";
 
 /**
- * Calls /api/path and reads its NDJSON stream.
- * `onText` receives the raw JSON text generated so far (for a live preview).
+ * Requests a learning path from `/api/path` and reads the streamed NDJSON response.
+ * @param {PathRequest} request Topic plus optional level, hours per week and goal.
+ * @param {(textSoFar: string) => void} onText Called on every chunk with all the raw JSON text received so far (for the live preview).
+ * @param {AbortSignal} [signal] Optional signal to cancel the request.
+ * @returns {Promise<LearningPath>} The validated path. Rejects with an `Error` holding a user-friendly message on failure.
  */
 export async function generatePath(
   request: PathRequest,
@@ -49,7 +52,11 @@ export async function generatePath(
   throw new Error("The connection closed before the path was finished. Please retry.");
 }
 
-/** Pull stage titles out of partial JSON so the loading state can show progress. */
+/**
+ * Pulls stage titles out of incomplete JSON so the loading panel can show progress.
+ * @param {string} partialJson The raw JSON text received so far (may be cut off mid-way).
+ * @returns {string[]} Every complete `"title"` value found, in order.
+ */
 export function stageTitlesSoFar(partialJson: string): string[] {
   return [...partialJson.matchAll(/"title"\s*:\s*"((?:[^"\\]|\\.)*)"/g)].map((m) => {
     try {

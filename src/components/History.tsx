@@ -10,6 +10,15 @@ type Props = {
   onDelete: (id: string) => void;
 };
 
+/**
+ * Sidebar list of saved paths with progress, selection and delete.
+ * @param {Props} props
+ * @param {SavedPath[]} props.paths Saved paths, newest first.
+ * @param {string | null} props.activeId ID of the path currently shown (highlighted).
+ * @param {(id: string) => void} props.onSelect Called with a path's ID when it is clicked.
+ * @param {(id: string) => void} props.onDelete Called with a path's ID after the user confirms deletion.
+ * @returns {JSX.Element} The list, or a placeholder message when there are no paths.
+ */
 export function History({ paths, activeId, onSelect, onDelete }: Props) {
   if (paths.length === 0) {
     return <p className="text-sm text-zinc-500">Your saved paths will appear here.</p>;

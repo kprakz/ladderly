@@ -1,3 +1,10 @@
+/**
+ * Thin horizontal progress bar; turns green at 100%.
+ * @param {Object} props
+ * @param {number} props.percent Progress from 0 to 100.
+ * @param {string} [props.className] Extra CSS classes for sizing and spacing.
+ * @returns {JSX.Element} An accessible `progressbar` element.
+ */
 export function ProgressBar({ percent, className = "" }: { percent: number; className?: string }) {
   return (
     <div

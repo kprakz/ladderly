@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { History } from "@/components/History";
+import { Logo } from "@/components/Logo";
 import { PathForm } from "@/components/PathForm";
 import { PathView } from "@/components/PathView";
 import { ErrorPanel, LoadingPanel } from "@/components/StatusPanels";
@@ -12,6 +13,10 @@ import { updatePaths, useSavedPaths, type SavedPath } from "@/lib/storage";
 
 type Status = { kind: "idle" } | { kind: "loading"; partial: string } | { kind: "error"; message: string };
 
+/**
+ * The app's only page: form, loading/error states, the active path and the saved-paths sidebar.
+ * @returns {JSX.Element} The page.
+ */
 export default function Home() {
   const savedPaths = useSavedPaths();
   const paths = savedPaths ?? [];
@@ -24,6 +29,12 @@ export default function Home() {
   // Show the selected path, falling back to the most recent one.
   const active = paths.find((p) => p.id === activeId) ?? paths[0];
 
+  /**
+   * Generates a path, showing the loading preview; on success saves and shows it, on failure shows the error.
+   * Cancels any generation already in progress.
+   * @param {PathRequest} request Topic and options from the form (or the last request, on Retry).
+   * @returns {Promise<void>}
+   */
   async function generate(request: PathRequest) {
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -47,6 +58,11 @@ export default function Home() {
     }
   }
 
+  /**
+   * Checks or unchecks a checkpoint item in the active path and saves the change.
+   * @param {string} key Checkpoint key from `checkKey`, e.g. `"1-0"`.
+   * @returns {void}
+   */
   function toggleCheck(key: string) {
     if (!active) return;
     updatePaths((prev) =>
@@ -58,6 +74,11 @@ export default function Home() {
     );
   }
 
+  /**
+   * Removes a saved path.
+   * @param {string} id The saved path's ID.
+   * @returns {void}
+   */
   function deletePath(id: string) {
     updatePaths((prev) => prev.filter((p) => p.id !== id));
   }
@@ -65,11 +86,12 @@ export default function Home() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
       <header className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            <span className="text-indigo-600 dark:text-indigo-400">◆</span> Pathfinder
-          </h1>
-          <p className="text-sm text-zinc-500">From zero to competent in any skill.</p>
+        <div className="flex items-center gap-3">
+          <Logo size={44} className="shrink-0 rounded-xl shadow-sm ring-1 ring-black/5 dark:ring-white/15" />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Ladderly</h1>
+            <p className="text-sm text-zinc-500">From zero to competent in any skill, one step at a time.</p>
+          </div>
         </div>
         <ThemeToggle />
       </header>

@@ -1,12 +1,15 @@
 {
-  "name": "pathfinder",
+  "name": "ladderly",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "desktop:dev": "node scripts/build-desktop.mjs && electron .",
+    "desktop:start": "electron .",
+    "desktop:build": "node scripts/build-desktop.mjs && electron-builder --win"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
@@ -20,9 +23,46 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "description": "Structured learning paths from zero to competent in any skill.",
+  "author": "Karthik Prakashan",
+  "main": "electron/main.js",
+  "build": {
+    "appId": "com.kprakz.ladderly",
+    "productName": "Ladderly",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json",
+      "!node_modules/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "shortcutName": "Ladderly"
+    },
+    "afterPack": "scripts/after-pack.cjs"
   }
 }
