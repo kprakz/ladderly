@@ -75,6 +75,25 @@ export default function Home() {
   }
 
   /**
+   * Saves a stage's quiz result on the active path, keeping the best score.
+   * @param {number} stageIndex Zero-based stage position.
+   * @param {number} correct How many questions were answered correctly.
+   * @param {number} total How many questions the quiz had.
+   * @returns {void}
+   */
+  function saveQuizScore(stageIndex: number, correct: number, total: number) {
+    if (!active) return;
+    updatePaths((prev) =>
+      prev.map((p) => {
+        if (p.id !== active.id) return p;
+        const previous = p.quizScores?.[String(stageIndex)];
+        if (previous && previous.correct >= correct) return p;
+        return { ...p, quizScores: { ...p.quizScores, [String(stageIndex)]: { correct, total } } };
+      }),
+    );
+  }
+
+  /**
    * Removes a saved path.
    * @param {string} id The saved path's ID.
    * @returns {void}
@@ -104,7 +123,7 @@ export default function Home() {
           {status.kind === "error" && lastRequest && (
             <ErrorPanel message={status.message} onRetry={() => generate(lastRequest)} />
           )}
-          {status.kind !== "loading" && active && <PathView saved={active} onToggle={toggleCheck} />}
+          {status.kind !== "loading" && active && <PathView key={active.id} saved={active} onToggle={toggleCheck} onQuizFinish={saveQuizScore} />}
           {status.kind === "idle" && !active && loaded && (
             <div className="rounded-xl border border-dashed border-zinc-300 p-10 text-center text-zinc-500 dark:border-zinc-700">
               Type a skill above — like <em>guitar</em>, <em>machine learning</em> or <em>public speaking</em> — to get

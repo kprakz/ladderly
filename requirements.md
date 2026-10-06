@@ -32,10 +32,10 @@ Many people want to learn a skill but never start because they don't know where 
 | FR-6 | Each path has a one-line summary of what "competent" means for the skill. |
 | FR-7 | Each path has 4–6 ordered stages. |
 | FR-8 | Each stage has a title and an estimated duration. |
-| FR-9 | Each stage lists 3–6 short concepts to learn. |
-| FR-10 | Each stage has 1–2 hands-on practice tasks. |
+| FR-9 | Each stage lists 3–6 specific things to learn. Each names the actual technique, tool, term or idea and what to know about it (e.g. "Decision trees: choosing splits by Gini impurity, and how max_depth controls complexity"), never generic study advice. |
+| FR-10 | Each stage has 1–2 hands-on practice tasks that name exactly what to work with (a dataset, song, tool or scenario) and a measurable goal. |
 | FR-11 | Each stage has 2–5 concrete, testable "you're ready to move on when…" checkpoint items. |
-| FR-12 | Each stage suggests 2–3 *kinds* of resources (e.g. "the official docs"). No URLs and no invented titles. |
+| FR-12 | Each stage suggests 2–3 *kinds* of resources (e.g. "the official docs"). Claude never writes URLs or invents titles; links come only from FR-45 to FR-48. |
 | FR-13 | Each path has a finish line: one final project or test that proves competence. |
 | FR-14 | Each path lists exactly 3 common pitfalls. |
 
@@ -87,7 +87,7 @@ Many people want to learn a skill but never start because they don't know where 
 |---|---|
 | FR-32 | Demo mode serves built-in sample paths and never calls the paid API. |
 | FR-33 | Demo mode is on when `DEMO_MODE=true`, and **always** on when no API key is set. |
-| FR-34 | Hand-written samples exist for guitar, public speaking and python (keyword match, case-insensitive). Other topics get a generic template naming the topic. |
+| FR-34 | Detailed hand-written samples exist for guitar, public speaking, python and machine learning (keyword match, case-insensitive; "machine learning" wins over "python", and "ml" only matches as a whole word). Other topics get a generic template, marked as such (FR-53). |
 | FR-35 | Demo responses stream like real ones, so the loading preview behaves the same. |
 | FR-36 | A banner tells users when demo mode is on and which topics have full samples. |
 
@@ -108,6 +108,22 @@ Many people want to learn a skill but never start because they don't know where 
 | ID | Requirement |
 |---|---|
 | FR-44 | The same code deploys to Vercel as a public website in demo mode, with no configuration. |
+
+### 3.11 Videos, courses and quizzes
+
+| ID | Requirement |
+|---|---|
+| FR-45 | Each stage has a "Videos for this week" dropdown. It shows a scrolling row of video cards (verified videos, for the demo's detailed paths) that ends in a YouTube search card using search words Claude writes for that stage. AI-generated paths, which have no verified videos, show the search card only. |
+| FR-46 | Each path has a "Learn with" panel: a row of recommended videos, then "Free courses & resources" and "Paid courses" as separate dropdowns (closed by default, each showing its item count). Courses are on known learning platforms (YouTube, Khan Academy, freeCodeCamp, MIT OpenCourseWare, Coursera to audit; Udemy, Skillshare, LinkedIn Learning, Domestika). Claude chooses the platforms and search words; the app builds the link from the platform's real search page. |
+| FR-47 | The demo's sample paths (guitar, public speaking, python, machine learning) also show hand-picked videos (with thumbnails) and specific course pages, each checked to exist before being added. |
+| FR-48 | Every link opens in a new tab (or the user's browser, in the desktop app) and works: either a verified page or a platform search. Course suggestions with an unknown platform are dropped rather than shown. A note says Ladderly isn't affiliated with any provider. |
+| FR-49 | Each stage has a 2–3 question multiple-choice quiz about that stage's own content (its techniques, terms and tools, not study habits). It unlocks once all of the stage's checkpoints are ticked. The generic demo template has no quiz. |
+| FR-50 | The quiz shows one question at a time. After each answer it marks it right or wrong, shows the correct option and a one-line explanation. At the end it shows the score and offers a retake. |
+| FR-51 | The best quiz score per stage is saved with the path. |
+| FR-52 | Paths saved before these features existed still load and work; they show a YouTube search link per stage but no quiz or course panel. |
+| FR-53 | Paths from the generic demo template show a notice that they're a general template, not a detailed plan, and name the topics that have detailed paths. |
+| FR-54 | Video cards behave like Netflix previews: on hover or keyboard focus a card zooms up, shows a play button, and cycles through still frames from inside the video (YouTube's auto-generated frames), with dots showing which frame is on screen. It returns to the cover image when the pointer leaves. Under "reduce motion", cards don't zoom or cycle. |
+| FR-55 | Video rows scroll sideways with arrow buttons that appear on hover, and only on a side with more to scroll to. |
 
 ## 4. Non-functional requirements
 
@@ -133,7 +149,7 @@ Many people want to learn a skill but never start because they don't know where 
 
 - User accounts, cloud sync and sharing paths with others
 - Editing generated paths
-- Links to specific external resources
+- Links to specific courses or videos for AI-generated paths (they get verified platform searches instead; see FR-46)
 - macOS, Linux and mobile app-store builds
 - Automatic updates for the desktop app
 
@@ -148,3 +164,8 @@ Many people want to learn a skill but never start because they don't know where 
 | Ticking checkboxes updates the stage and overall progress, and survives a reload | FR-20 to FR-24 |
 | `npm run desktop:build` produces `dist/Ladderly Setup <version>.exe`, and the installed app opens and generates a demo path offline | FR-37, FR-38 |
 | The packaged app contains no `.env` files | NFR-1 |
+| Every demo path validates against both the stored and the generated schema, and every featured video and course URL loads | FR-45 to FR-48 |
+| Ticking a stage's checkpoints unlocks its quiz; answering shows right/wrong with an explanation, and the best score survives a reload | FR-49 to FR-51 |
+| A path saved in the old format (no quiz, courses or video search) still loads | FR-52 |
+| Hovering a video card zooms it and cycles its frames, leaving resets it; dropdowns start closed and open on click; scroll arrows appear only where there's more to see; every per-week video ID is confirmed via YouTube oEmbed | FR-45, FR-46, FR-54, FR-55 |
+| An unknown topic in demo mode shows the template notice and no quiz; "machine learning" shows the detailed ML path with topic quizzes | FR-34, FR-49, FR-53 |

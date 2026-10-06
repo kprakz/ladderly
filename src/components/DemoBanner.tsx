@@ -12,8 +12,8 @@ export async function DemoBanner() {
 
   return (
     <div className="bg-indigo-600 px-4 py-2 text-center text-sm text-white">
-      Demo version: full sample paths for <strong>guitar</strong>, <strong>public speaking</strong> and{" "}
-      <strong>python</strong>. Other topics get a general template.
+      Demo version: detailed paths for <strong>guitar</strong>, <strong>python</strong>,{" "}
+      <strong>public speaking</strong> and <strong>machine learning</strong>. Other topics get a general template.
     </div>
   );
 }

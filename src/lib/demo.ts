@@ -1,3 +1,11 @@
+import {
+  genericExtras,
+  GUITAR_EXTRAS,
+  MACHINE_LEARNING_EXTRAS,
+  type PathExtra,
+  PUBLIC_SPEAKING_EXTRAS,
+  PYTHON_EXTRAS,
+} from "./demoExtras";
 import type { LearningPath } from "./schema";
 
 /**
@@ -137,11 +145,152 @@ const PYTHON: LearningPath = {
   pitfalls: ["Watching tutorials without writing code yourself", "Copying code you don't understand", "Avoiding error messages instead of reading them"],
 };
 
-const SAMPLES: { keywords: string[]; path: LearningPath }[] = [
-  { keywords: ["guitar"], path: GUITAR },
-  { keywords: ["public speaking", "speaking", "presentation", "speech"], path: PUBLIC_SPEAKING },
-  { keywords: ["python"], path: PYTHON },
+const MACHINE_LEARNING: LearningPath = {
+  summary:
+    "Frame a prediction problem, clean real data, train and compare models with scikit-learn, evaluate them honestly and explain the results.",
+  stages: [
+    {
+      title: "Python for data and the ML workflow",
+      duration: "2–3 weeks",
+      concepts: [
+        "NumPy arrays: shapes, indexing, vectorised maths and broadcasting",
+        "pandas DataFrames: read_csv, filtering rows, groupby, and handling missing values",
+        "Matplotlib basics: histograms, scatter plots and line charts",
+        "The ML workflow: question → data → features → model → evaluation",
+        "Supervised vs unsupervised learning; regression vs classification problems",
+      ],
+      practice: [
+        "Load the Titanic dataset with pandas, fill missing ages with the median, and plot survival rate by sex and passenger class",
+        "Write your own mean, standard deviation and min-max scaler with NumPy and check them against np.mean and np.std",
+      ],
+      checkpoint: [
+        "Load an unfamiliar CSV and answer three questions about it with pandas (e.g. average fare per class) in under 20 minutes",
+        "Explain, with your own example, whether a problem is regression or classification",
+        "Make a histogram and a scatter plot and describe what each one shows",
+      ],
+      resources: ["the official pandas getting-started tutorials", "a Python-for-data-analysis course", "public datasets to practise on"],
+    },
+    {
+      title: "Core supervised learning techniques",
+      duration: "3–4 weeks",
+      concepts: [
+        "Linear regression: fitting a line by minimising mean squared error, and reading the coefficients",
+        "Logistic regression: predicting probabilities with the sigmoid function and a decision threshold",
+        "k-nearest neighbours: distance-based predictions, and why feature scaling matters",
+        "Decision trees: choosing splits by Gini impurity, and how max_depth controls complexity",
+        "Random forests: averaging many trees trained on bootstrapped samples (bagging)",
+        "scikit-learn's fit / predict / score pattern and train_test_split",
+      ],
+      practice: [
+        "Predict California house prices with LinearRegression and DecisionTreeRegressor, and compare their mean absolute error",
+        "Classify the Titanic passengers with logistic regression, k-NN and a random forest, and record each model's test accuracy in a table",
+      ],
+      checkpoint: [
+        "Train and evaluate a scikit-learn model in a blank notebook without copying code",
+        "Explain in two sentences how a decision tree picks a split",
+        "Show with your own k-NN results how accuracy changes when you scale the features",
+      ],
+      resources: ["the scikit-learn user guide and examples", "a beginner machine learning course with notebooks", "visual explainer videos on each algorithm"],
+    },
+    {
+      title: "Evaluating models honestly",
+      duration: "2–3 weeks",
+      concepts: [
+        "Train/test splits, and why you never judge a model on its training data",
+        "k-fold cross-validation for a more reliable score",
+        "Overfitting vs underfitting, and reading learning curves",
+        "Classification metrics: confusion matrix, precision, recall and F1",
+        "Regression metrics: MAE, RMSE and R²",
+        "Hyperparameter tuning with GridSearchCV, and preventing data leakage with Pipelines",
+      ],
+      practice: [
+        "On the credit-card fraud dataset, compare accuracy with precision and recall, and write down why accuracy is misleading there",
+        "Tune a random forest's max_depth and n_estimators with GridSearchCV inside a Pipeline that also scales the features",
+      ],
+      checkpoint: [
+        "Calculate precision and recall by hand from a confusion matrix",
+        "Explain data leakage and show how a Pipeline prevents it",
+        "Report a model's 5-fold cross-validation score as a mean ± standard deviation",
+      ],
+      resources: ["the scikit-learn model evaluation guide", "a course chapter on model validation", "worked notebooks on imbalanced data"],
+    },
+    {
+      title: "Feature engineering and unsupervised learning",
+      duration: "2–3 weeks",
+      concepts: [
+        "Encoding categories: one-hot vs ordinal encoding",
+        "Imputing missing values with SimpleImputer, and combining steps in a ColumnTransformer",
+        "Creating new features from dates, text length and ratios",
+        "k-means clustering, and choosing k with the elbow method",
+        "PCA: reducing dimensions while keeping most of the variance",
+      ],
+      practice: [
+        "Improve your house-price model's MAE by at least 10% using only feature engineering",
+        "Segment customers in a retail dataset with k-means and describe each cluster in plain words",
+      ],
+      checkpoint: [
+        "Build a ColumnTransformer that imputes, scales and one-hot encodes a mixed dataset",
+        "Choose k for k-means and justify it with an elbow plot",
+        "Explain what the first principal component represents",
+      ],
+      resources: ["the scikit-learn preprocessing guide", "a hands-on feature engineering tutorial", "public customer or retail datasets"],
+    },
+    {
+      title: "Neural network basics",
+      duration: "3–4 weeks",
+      concepts: [
+        "Neurons, layers, weights and activation functions (ReLU, sigmoid, softmax)",
+        "Loss functions and gradient descent, and what the learning rate controls",
+        "Backpropagation at an intuitive level",
+        "Building and training a small network in PyTorch or Keras",
+        "Fighting overfitting in neural nets: validation sets, dropout and early stopping",
+      ],
+      practice: [
+        "Train a small network on the MNIST handwritten digits to above 97% test accuracy",
+        "Plot training vs validation loss, and use early stopping to pick the best epoch",
+      ],
+      checkpoint: [
+        "Explain what happens in one step of gradient descent",
+        "Build, train and evaluate a two-layer network from a blank notebook",
+        "Show on a loss curve what happens when the learning rate is too high",
+      ],
+      resources: ["the official PyTorch or Keras beginner tutorials", "visual explainer videos on neural networks", "a practical deep learning course"],
+    },
+  ],
+  finishLine: {
+    name: "End-to-end prediction project",
+    description:
+      "Pick a public dataset, frame a prediction question, build a clean Pipeline, compare at least three models with cross-validation, and write a short report on your metrics, mistakes and next steps.",
+  },
+  pitfalls: [
+    "Evaluating on training data, or leaking test data into training",
+    "Trusting accuracy on imbalanced data instead of checking precision and recall",
+    "Jumping to deep learning before you're comfortable with data cleaning and simple models",
+  ],
+};
+
+const SAMPLES: { keywords: string[]; path: LearningPath; extra: PathExtra }[] = [
+  { keywords: ["guitar"], path: GUITAR, extra: GUITAR_EXTRAS },
+  { keywords: ["public speaking", "speaking", "presentation", "speech"], path: PUBLIC_SPEAKING, extra: PUBLIC_SPEAKING_EXTRAS },
+  // Machine learning comes before Python so "machine learning with Python" gets the ML path.
+  { keywords: ["machine learning", " ml "], path: MACHINE_LEARNING, extra: MACHINE_LEARNING_EXTRAS },
+  { keywords: ["python"], path: PYTHON, extra: PYTHON_EXTRAS },
 ];
+
+/**
+ * Adds the per-stage video searches and quizzes, course picks and featured links to a demo path.
+ * @param {LearningPath} path The base demo path.
+ * @param {PathExtra} extra The extra content; its `stages` line up with the path's stages by position.
+ * @returns {LearningPath} A new path with everything merged in.
+ */
+function withExtras(path: LearningPath, extra: PathExtra): LearningPath {
+  return {
+    ...path,
+    stages: path.stages.map((stage, i) => ({ ...stage, ...extra.stages[i] })),
+    courses: extra.courses,
+    ...(extra.featured ? { featured: extra.featured } : {}),
+  };
+}
 
 /**
  * Builds a generic 4-stage path for topics without a hand-written sample.
@@ -151,7 +300,8 @@ const SAMPLES: { keywords: string[]; path: LearningPath }[] = [
 function genericPath(topic: string): LearningPath {
   const t = topic.trim();
   return {
-    summary: `[Demo] Use ${t} confidently on your own for real tasks. (A general template: the demo has tailored paths for guitar, public speaking and python.)`,
+    summary: `Use ${t} confidently on your own for real tasks.`,
+    isTemplate: true,
     stages: [
       {
         title: `${t} fundamentals`,
@@ -196,10 +346,13 @@ function genericPath(topic: string): LearningPath {
 
 /**
  * Picks the demo path for a topic: a hand-written sample if a keyword matches, otherwise the generic template.
- * @param {string} topic The topic the user typed (matching ignores case and looks anywhere in the text).
+ * Either way it includes video searches, quizzes and course links (plus verified featured links for samples).
+ * @param {string} topic The topic the user typed (matching ignores case and looks anywhere in the text; the text is
+ *   padded with spaces so keywords like " ml " match whole words only).
  * @returns {LearningPath} The matching sample path, or a generic path for the topic.
  */
 export function getDemoPath(topic: string): LearningPath {
-  const lower = topic.toLowerCase();
-  return SAMPLES.find((s) => s.keywords.some((k) => lower.includes(k)))?.path ?? genericPath(topic);
+  const lower = ` ${topic.toLowerCase()} `;
+  const sample = SAMPLES.find((s) => s.keywords.some((k) => lower.includes(k)));
+  return sample ? withExtras(sample.path, sample.extra) : withExtras(genericPath(topic), genericExtras(topic));
 }
