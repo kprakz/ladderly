@@ -1,17 +1,28 @@
 "use client";
 
 import { progressOf, type SavedPath } from "@/lib/storage";
+import { LearningLinks } from "./LearningLinks";
 import { ProgressBar } from "./ProgressBar";
 import { StageCard } from "./StageCard";
 
 /**
- * A full learning path: title, summary, overall progress, stage timeline, finish line and pitfalls.
+ * A full learning path: title, summary, overall progress, videos and courses, stage timeline (with quizzes),
+ * finish line and pitfalls.
  * @param {Object} props
- * @param {SavedPath} props.saved The saved path, including which checkpoint items are checked.
+ * @param {SavedPath} props.saved The saved path, including which checkpoint items are checked and quiz scores.
  * @param {(key: string) => void} props.onToggle Called with a checkpoint key when a checkbox changes.
+ * @param {(stageIndex: number, correct: number, total: number) => void} props.onQuizFinish Called when a stage quiz is finished.
  * @returns {JSX.Element} The path view.
  */
-export function PathView({ saved, onToggle }: { saved: SavedPath; onToggle: (key: string) => void }) {
+export function PathView({
+  saved,
+  onToggle,
+  onQuizFinish,
+}: {
+  saved: SavedPath;
+  onToggle: (key: string) => void;
+  onQuizFinish: (stageIndex: number, correct: number, total: number) => void;
+}) {
   const { path, request } = saved;
   const checked = new Set(saved.checked);
   const progress = progressOf(saved);
@@ -27,15 +38,33 @@ export function PathView({ saved, onToggle }: { saved: SavedPath; onToggle: (key
         </div>
       </div>
 
+      {path.isTemplate && (
+        <div
+          role="note"
+          className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+        >
+          <p className="font-semibold">This is a general template, not a detailed plan for {request.topic}.</p>
+          <p className="mt-1">
+            The free demo has detailed paths, with quizzes, for guitar, python, public speaking and machine learning.
+            With an Anthropic API key, Ladderly writes a detailed path and quiz for any topic.
+          </p>
+        </div>
+      )}
+
+      <LearningLinks path={path} topic={request.topic} />
+
       <ol>
         {path.stages.map((stage, i) => (
           <StageCard
             key={i}
+            topic={request.topic}
             stage={stage}
             index={i}
             isLast={i === path.stages.length - 1}
             checked={checked}
+            quizBest={saved.quizScores?.[String(i)]}
             onToggle={onToggle}
+            onQuizFinish={onQuizFinish}
           />
         ))}
       </ol>

@@ -54,11 +54,19 @@ export async function generatePath(
 
 /**
  * Pulls stage titles out of incomplete JSON so the loading panel can show progress.
+ * Only looks inside the `"stages"` section, so titles of featured videos or courses aren't mistaken for stages.
  * @param {string} partialJson The raw JSON text received so far (may be cut off mid-way).
- * @returns {string[]} Every complete `"title"` value found, in order.
+ * @returns {string[]} Every complete stage `"title"` value found, in order.
  */
 export function stageTitlesSoFar(partialJson: string): string[] {
-  return [...partialJson.matchAll(/"title"\s*:\s*"((?:[^"\\]|\\.)*)"/g)].map((m) => {
+  const start = partialJson.indexOf('"stages"');
+  if (start === -1) return [];
+  // The stages section ends where the next top-level field begins (the order varies, so take the earliest).
+  const ends = ['"finishLine"', '"pitfalls"', '"courses"', '"featured"', '"summary"']
+    .map((key) => partialJson.indexOf(key, start))
+    .filter((i) => i !== -1);
+  const section = partialJson.slice(start, ends.length ? Math.min(...ends) : undefined);
+  return [...section.matchAll(/"title"\s*:\s*"((?:[^"\\]|\\.)*)"/g)].map((m) => {
     try {
       return JSON.parse(`"${m[1]}"`) as string;
     } catch {

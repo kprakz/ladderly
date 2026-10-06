@@ -61,6 +61,8 @@ src/
     demo.ts          Demo-mode switch and sample paths
     generate.ts      Browser-side client for the streaming API
     storage.ts       localStorage-backed store for saved paths
+    platforms.ts     Learning platforms and their search-link templates
+    demoExtras.ts    Demo video searches, quizzes, course picks and verified featured links
 ```
 
 ## 3. Request flow
@@ -125,6 +127,8 @@ classDiagram
     stages: Stage[4..6]
     finishLine: FinishLine
     pitfalls: string[3]
+    courses?: CourseLink[1..6]
+    featured?: Featured  "demo only"
   }
   class Stage {
     title: string
@@ -133,6 +137,24 @@ classDiagram
     practice: string[1..2]
     checkpoint: string[2..5]
     resources: string[2..3]
+    videoSearch?: string
+    quiz?: QuizQuestion[2..3]
+    videos?: (title, channel, youtubeId)[]  "demo only"
+  }
+  class QuizQuestion {
+    question: string
+    options: string[4]
+    answer: int (0–3)
+    explanation: string
+  }
+  class CourseLink {
+    platform: PlatformId
+    query: string
+    note: string
+  }
+  class Featured {
+    videos: (title, channel, youtubeId)[]
+    courses: (title, provider, url, kind)[]
   }
   class FinishLine {
     name: string
@@ -144,12 +166,21 @@ classDiagram
     request: PathRequest
     path: LearningPath
     checked: string[]  "stage-item" keys
+    quizScores?: stageIndex → (correct, total)
   }
   LearningPath *-- Stage
+  Stage *-- QuizQuestion
+  LearningPath *-- CourseLink
+  LearningPath *-- Featured
   LearningPath *-- FinishLine
   SavedPath *-- PathRequest
   SavedPath *-- LearningPath
 ```
+
+There are two versions of the path schema:
+
+- **`GeneratedPathSchema`** is what Claude must produce: `videoSearch`, `quiz` and `courses` are required.
+- **`LearningPathSchema`** is what the app stores and shows: the same fields, but optional, so paths saved before they existed still validate (otherwise `loadPaths` would drop them). Only this version has `featured`, which comes solely from hand-checked demo data.
 
 Checkbox state is stored as keys like `"2-0"` (stage 3, item 1) from `checkKey()`. That keeps saved data small and independent of the checkpoint text.
 
@@ -157,10 +188,30 @@ Checkbox state is stored as keys like `"2-0"` (stage 3, item 1) from `checkKey()
 
 - **SDK:** `@anthropic-ai/sdk`, `client.beta.messages.stream(...)`, on the server only.
 - **Model:** `claude-opus-5` with `output_config.effort: "medium"`, which balances speed and quality for this short, structured task.
-- **Structured output:** `output_config.format = betaZodOutputFormat(LearningPathSchema)`. The SDK turns the zod schema into a JSON Schema, so Claude must return JSON of that shape. Count limits the JSON Schema can't express (e.g. "4–6 stages") are passed to Claude as hints and **enforced by zod** after generation.
+- **Structured output:** `output_config.format = betaZodOutputFormat(GeneratedPathSchema)`. The SDK turns the zod schema into a JSON Schema, so Claude must return JSON of that shape. Count limits the JSON Schema can't express (e.g. "4–6 stages") are passed to Claude as hints and **enforced by zod** after generation.
 - **Refusal fallback:** `fallbacks: "default"` with beta `server-side-fallback-2026-07-01`. If a safety classifier declines, the API retries on Anthropic's recommended fallback model instead of failing.
 - **Stop reasons:** `refusal` and `max_tokens` become user-friendly errors. Only `end_turn` output is parsed.
-- **Prompting:** `SYSTEM_PROMPT` in `prompt.ts` sets the rules (testable checkpoints, no URLs, realistic durations). `buildUserPrompt()` adds the learner's details.
+- **Prompting:** `SYSTEM_PROMPT` in `prompt.ts` sets the rules: detailed, specific concepts (each names the exact technique or tool, with a vague-vs-specific example), practice tasks with a named dataset or scenario and a measurable goal, testable checkpoints, quiz questions about the stage's own content, no URLs, and realistic durations. The schema field descriptions repeat these rules, because Claude sees them too. `buildUserPrompt()` adds the learner's details.
+
+### 5.1 Videos, courses and quizzes
+
+**No made-up links.** AI models often invent URLs that look real but don't exist, so Claude never writes a URL:
+
+| Content | What Claude writes | What the app does |
+|---|---|---|
+| Stage videos | `videoSearch`: search words for that stage | A "More on YouTube" card at the end of the stage's video row, linking to YouTube's search results (`youtubeSearchUrl`). Demo samples also carry hand-verified `videos` per stage |
+| Courses | `courses[]`: a platform ID, search words and a short note | `lib/platforms.ts` maps each platform ID to its real search page and builds the link (`platformSearchUrl`). Each platform is tagged free, free to audit (Coursera) or paid |
+| Quiz | `quiz[]`: question, 4 options, the correct index, an explanation | Shown by `StageQuiz` once the stage is complete |
+
+The platform list is described to Claude in the schema and the prompt, but the SDK can't enforce string enums in structured output. So the route runs `dropUnknownPlatforms()` before validation: a course on an unlisted platform is removed instead of failing the whole path. Every platform search URL was checked to load. edX and MasterClass were left out, because their search pages didn't respond or redirected to the homepage.
+
+**Demo content** lives in `lib/demoExtras.ts` and is merged into the sample paths by `getDemoPath`. The four samples (guitar, public speaking, python, machine learning) also have `featured` videos and course pages. Each YouTube ID was confirmed with YouTube's oEmbed endpoint and each course URL was loaded before being added. The generic template gets topic-based searches only: no quiz (a quiz that can't ask about the topic is useless) and no featured links. It sets `isTemplate: true`, and `PathView` shows a notice that it's a general template rather than a detailed plan.
+
+**Video rows** (`VideoRow`, `VideoCard`): each stage's "Videos for this week" dropdown (`Disclosure`) and the "Recommended videos" strip use the same horizontal, snap-scrolling row. A card shows YouTube's cover thumbnail (`mqdefault.jpg`) with the title and channel underneath. On hover or focus it zooms up, shows a play button, and cycles every 0.9 s through `mq1`–`mq3`: still frames YouTube captures from inside every video, all 320×180. The extra frames load only after the first hover, and the cycling stops under reduced motion. Arrow buttons use a `ResizeObserver` and the scroll position to appear only on a side with more to show. The per-stage videos for the four demo samples (49 in total) were found with each stage's search words, reviewed by hand, and confirmed via YouTube oEmbed. The app itself never scrapes YouTube.
+
+**Dropdowns** (`Disclosure`): a button with `aria-expanded`/`aria-controls`, and a content region animated with the `grid-template-rows: 0fr → 1fr` technique. Closed content is `inert`, so it can't be tabbed into. The "Learn with" panel puts free and paid courses in separate dropdowns, closed by default.
+
+**Quiz flow** (`StageQuiz`): locked until every checkpoint in the stage is ticked → "Take the quiz" → one question at a time. Picking an option locks it, marks right (green) and wrong (red), and shows the explanation → score → retake. `page.tsx` saves the best score per stage in `SavedPath.quizScores`. `PathView` is keyed by path ID, so quiz state resets when you switch paths.
 
 ## 6. Demo mode
 
@@ -279,6 +330,7 @@ Every UI error shows **Retry**, which re-sends the last request.
 - `.gitignore` excludes `.env*` except `.env.example`, which holds no key. The desktop build deletes `.env*` from the bundle in two places.
 - The web deployment has no key, so the public endpoint can't spend money.
 - Model output is treated as data: validated with zod and rendered as text by React (no HTML injection).
+- Model output never supplies a URL. Links are built from a fixed list of platform search pages (search words are URL-encoded), or come from hand-verified demo data. External links use `rel="noopener noreferrer"`, and in the desktop app they open in the user's browser.
 
 ## 11. Design decisions
 
@@ -290,6 +342,8 @@ Every UI error shows **Retry**, which re-sends the last request.
 | Demo mode on when no key | Explicit flag only | Fail-safe against accidental API costs |
 | localStorage | Database / accounts | No backend state needed. Private to the device |
 | `useSyncExternalStore` for storage | `useEffect` + `useState` | Correct hydration and no cascading renders |
+| Per-stage video previews from YouTube's frame thumbnails | Embedded iframes; autoplaying muted video | No player loads until clicked, so it's light and private. Feels like a Netflix preview |
+| Platform search links for AI paths | Let Claude write course/video URLs; Claude web search; YouTube Data API | Always valid and free, with no extra API key or per-search cost. Specific verified links are used where they've been checked (demo samples) |
 
 ## 12. Possible future work
 
@@ -298,3 +352,4 @@ Every UI error shows **Retry**, which re-sends the last request.
 - Export and import of saved paths
 - macOS and Linux builds (Electron supports them. They need their own build machines)
 - More hand-written demo topics
+- Specific video and course picks for AI paths, using Claude's web search tool or the YouTube Data API, with links checked before they're shown

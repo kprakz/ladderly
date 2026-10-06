@@ -2,7 +2,13 @@ import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { getDemoPath, isDemoMode } from "@/lib/demo";
 import { buildUserPrompt, SYSTEM_PROMPT } from "@/lib/prompt";
-import { LearningPathSchema, PathRequestSchema, type StreamEvent } from "@/lib/schema";
+import {
+  dropUnknownPlatforms,
+  GeneratedPathSchema,
+  LearningPathSchema,
+  PathRequestSchema,
+  type StreamEvent,
+} from "@/lib/schema";
 
 // The SDK reads ANTHROPIC_API_KEY from the environment (.env.local). This file only runs on the server.
 const client = new Anthropic();
@@ -34,8 +40,8 @@ export async function POST(req: Request): Promise<Response> {
         const claude = client.beta.messages.stream(
           {
             model: "claude-opus-5",
-            max_tokens: 16000,
-            output_config: { effort: "medium", format: betaZodOutputFormat(LearningPathSchema) },
+            max_tokens: 32000, // room for stages, quizzes and course picks
+            output_config: { effort: "medium", format: betaZodOutputFormat(GeneratedPathSchema) },
             // If a safety classifier declines, retry server-side on Anthropic's recommended fallback model.
             betas: ["server-side-fallback-2026-07-01"],
             fallbacks: "default",
@@ -59,7 +65,7 @@ export async function POST(req: Request): Promise<Response> {
         } else if (message.stop_reason === "max_tokens") {
           send({ type: "error", message: "The response was cut off before it finished. Please retry." });
         } else {
-          const result = LearningPathSchema.safeParse(safeJsonParse(text));
+          const result = GeneratedPathSchema.safeParse(dropUnknownPlatforms(safeJsonParse(text)));
           if (result.success) send({ type: "done", path: result.data });
           else send({ type: "error", message: "Claude returned a path in an unexpected format. Please retry." });
         }
@@ -112,8 +118,8 @@ function demoResponse(topic: string): Response {
        */
       const send = (event: StreamEvent) => controller.enqueue(encodeEvent(event));
       await sleep(600); // simulate "thinking"
-      for (let i = 0; i < json.length; i += 60) {
-        send({ type: "delta", text: json.slice(i, i + 60) });
+      for (let i = 0; i < json.length; i += 120) {
+        send({ type: "delta", text: json.slice(i, i + 120) });
         await sleep(25);
       }
       send({ type: "done", path });

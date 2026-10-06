@@ -2,28 +2,38 @@
 
 import type { Stage } from "@/lib/schema";
 import { checkKey } from "@/lib/storage";
+import { Disclosure } from "./Disclosure";
 import { ProgressBar } from "./ProgressBar";
+import { StageQuiz } from "./StageQuiz";
+import { VideoRow } from "./VideoRow";
 
 type Props = {
+  topic: string;
   stage: Stage;
   index: number;
   isLast: boolean;
   checked: Set<string>;
+  quizBest?: { correct: number; total: number };
   onToggle: (key: string) => void;
+  onQuizFinish: (stageIndex: number, correct: number, total: number) => void;
 };
 
 /**
  * One stage in the timeline: number marker, title, duration, stage progress, concepts, practice,
- * checkpoint checkboxes and resources.
+ * checkpoint checkboxes, resources, a "Videos for this week" dropdown (a Netflix-style row of previews plus a
+ * YouTube search), and a quiz that unlocks when the stage is done.
  * @param {Props} props
+ * @param {string} props.topic The path's topic, used for the video search when the stage has none of its own.
  * @param {Stage} props.stage The stage content.
  * @param {number} props.index Zero-based stage position (shown as index + 1, and used in checkbox keys).
  * @param {boolean} props.isLast Hides the connecting timeline line after the final stage.
  * @param {Set<string>} props.checked Keys of all checked checkpoint items in the path.
+ * @param {{ correct: number, total: number }} [props.quizBest] Best saved quiz score for this stage, if any.
  * @param {(key: string) => void} props.onToggle Called with a checkpoint key when its checkbox changes.
+ * @param {(stageIndex: number, correct: number, total: number) => void} props.onQuizFinish Called when the quiz is finished.
  * @returns {JSX.Element} A timeline list item.
  */
-export function StageCard({ stage, index, isLast, checked, onToggle }: Props) {
+export function StageCard({ topic, stage, index, isLast, checked, quizBest, onToggle, onQuizFinish }: Props) {
   const done = stage.checkpoint.filter((_, i) => checked.has(checkKey(index, i))).length;
   const total = stage.checkpoint.length;
   const complete = done === total;
@@ -101,6 +111,26 @@ export function StageCard({ stage, index, isLast, checked, onToggle }: Props) {
             ))}
           </div>
         </Section>
+
+        <Disclosure
+          title="Videos for this week"
+          icon="▶"
+          count={stage.videos?.length || undefined}
+          className="mt-4"
+        >
+          <VideoRow videos={stage.videos ?? []} searchQuery={stage.videoSearch ?? `${topic} ${stage.title} lesson`} />
+        </Disclosure>
+
+        {stage.quiz && stage.quiz.length > 0 && (
+          <Section title="Check your understanding" className="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+            <StageQuiz
+              questions={stage.quiz}
+              unlocked={complete}
+              best={quizBest}
+              onFinish={(correct, totalQs) => onQuizFinish(index, correct, totalQs)}
+            />
+          </Section>
+        )}
       </article>
     </li>
   );

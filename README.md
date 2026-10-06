@@ -4,6 +4,8 @@ Type any skill or topic ("guitar", "machine learning", "public speaking") and ge
 
 - 4–6 ordered stages, each with concepts, practice tasks, a testable "ready to move on" checkpoint and suggested kinds of resources
 - A finish-line project and common pitfalls
+- Videos and courses: a "Videos for this week" dropdown per stage with Netflix-style hover previews, plus free and paid course links in dropdowns
+- A short quiz for each stage that unlocks when you finish it, with explanations and your best score saved
 - Tick off checkpoint items and track progress per stage and overall
 - Paths and progress are saved in your browser (localStorage)
 - Live streaming preview while the path is generated, and friendly errors with a retry button
@@ -25,8 +27,8 @@ cp .env.example .env.local
 
 With `DEMO_MODE=true` in `.env.local` (the default in `.env.example`), or whenever no `ANTHROPIC_API_KEY` is set, the app doesn't call the API. A banner at the top of the page shows when demo mode is on. It streams built-in sample paths instead, so everything else (timeline, checkboxes, progress, history, dark mode) works for free.
 
-- Hand-written samples: **guitar**, **public speaking** and **python**. A topic containing one of those words gets that sample.
-- Any other topic gets a generic template with the topic's name filled in, marked `[Demo]` in its summary.
+- Detailed hand-written samples: **guitar**, **public speaking**, **python** and **machine learning**, each with videos, courses and quizzes. A topic containing one of those words gets that sample.
+- Any other topic gets a generic template with the topic's name filled in. It's clearly marked as a template and has no quiz. Real, detailed paths for any topic need an API key.
 - The level, hours and goal options are ignored in demo mode.
 
 The samples live in `src/lib/demo.ts`. Add more there.
@@ -117,6 +119,11 @@ src/
     PathView.tsx        # Summary, overall progress, timeline, finish line, pitfalls
     StageCard.tsx       # One stage in the timeline, with checkpoint checkboxes
     StatusPanels.tsx    # Loading (live stage preview) and error (retry) panels
+    LearningLinks.tsx   # "Learn with" panel: video row, free and paid course dropdowns
+    VideoRow.tsx        # Netflix-style scrolling row of video cards + "More on YouTube"
+    VideoCard.tsx       # Video card with hover zoom and rotating in-video frames
+    Disclosure.tsx      # Accessible animated dropdown
+    StageQuiz.tsx       # Per-stage multiple-choice quiz
     DemoBanner.tsx      # "Demo version" banner, rendered per request
     Logo.tsx            # The Ladderly logo as an inline SVG
     History.tsx         # Saved paths list
@@ -126,6 +133,8 @@ src/
     schema.ts           # zod schemas + types shared by server and client
     prompt.ts           # System prompt and user prompt builder
     demo.ts             # Demo-mode switch and sample paths
+    demoExtras.ts       # Demo quizzes, video searches, course picks and verified featured links
+    platforms.ts        # Learning platforms and their search-link templates
     generate.ts         # Client helper that reads the NDJSON stream
     storage.ts          # localStorage-backed store (useSyncExternalStore)
 ```

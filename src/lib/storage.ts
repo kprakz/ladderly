@@ -13,6 +13,8 @@ const SavedPathSchema = z.object({
   path: LearningPathSchema,
   /** Checked checkpoint items, keyed "stageIndex-itemIndex". */
   checked: z.array(z.string()),
+  /** Best quiz score per stage, keyed by stage index ("0", "1", …). Missing for paths saved before quizzes existed. */
+  quizScores: z.record(z.string(), z.object({ correct: z.number(), total: z.number() })).optional(),
 });
 
 export type SavedPath = z.infer<typeof SavedPathSchema>;
