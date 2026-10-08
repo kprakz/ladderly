@@ -79,6 +79,52 @@ export const GeneratedPathSchema = PathCore.extend({
 });
 
 /**
+ * Cleans up an AI-generated path before validation, so small mistakes don't fail the whole path:
+ * - removes anything only hand-verified data may contain (`featured` links, per-stage `videos`, `isTemplate`),
+ *   so a model can never inject URLs;
+ * - trims lists that are longer than allowed (e.g. 7 concepts → 6);
+ * - drops malformed quiz questions and courses on unknown platforms.
+ * Lists that are too short are left as they are, so validation still rejects them.
+ * @param {unknown} raw Parsed JSON from the model.
+ * @returns {unknown} The cleaned value (or `raw` unchanged if it isn't an object).
+ */
+export function repairGeneratedPath(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return raw;
+  const { featured: _f, isTemplate: _t, ...rest } = raw as Record<string, unknown>;
+  void _f;
+  void _t;
+  const path = dropUnknownPlatforms(rest) as Record<string, unknown>;
+  /**
+   * Shortens a list to at most `max` items (leaves non-lists alone).
+   * @param {unknown} v The value that should be a list.
+   * @param {number} max The most items to keep.
+   * @returns {unknown} The trimmed list, or `v` unchanged.
+   */
+  const trim = (v: unknown, max: number) => (Array.isArray(v) ? v.slice(0, max) : v);
+
+  if (Array.isArray(path.stages)) {
+    path.stages = path.stages.slice(0, 6).map((s) => {
+      if (!s || typeof s !== "object") return s;
+      const { videos: _v, ...stage } = s as Record<string, unknown>;
+      void _v;
+      return {
+        ...stage,
+        concepts: trim(stage.concepts, 6),
+        practice: trim(stage.practice, 2),
+        checkpoint: trim(stage.checkpoint, 5),
+        resources: trim(stage.resources, 3),
+        quiz: Array.isArray(stage.quiz)
+          ? stage.quiz.filter((q) => QuizQuestionSchema.safeParse(q).success).slice(0, 3)
+          : undefined,
+      };
+    });
+  }
+  path.pitfalls = trim(path.pitfalls, 3);
+  path.courses = trim(path.courses, 6);
+  return path;
+}
+
+/**
  * Removes course suggestions whose platform isn't in Ladderly's list, so one unknown platform doesn't make
  * a whole path fail validation. (Structured output describes the allowed platforms but can't enforce them.)
  * @param {unknown} raw Parsed JSON from Claude, before validation.

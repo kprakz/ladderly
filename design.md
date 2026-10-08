@@ -61,9 +61,28 @@ src/
     demo.ts          Demo-mode switch and sample paths
     generate.ts      Browser-side client for the streaming API
     storage.ts       localStorage-backed store for saved paths
+    profile.ts       Learner's name and daily goal (localStorage)
+    activity.ts      Rungs climbed per day (localStorage)
+    dates.ts         Local-calendar day keys (YYYY-MM-DD) and day arithmetic
+    streaks.ts       Streak, rest days and heatmap maths (pure functions)
+    badges.ts        Milestone badges
+    celebrate.ts     Logs a step and shows toasts for streaks, goals and badges
+    ai/models.ts     Engines, model lists, Ollama catalog, recommendation, AiSettingsSchema
+    ai/settingsStore.ts  localStorage store for the AI engine choice
+    ai/useAiStatus.ts    Hook that fetches /api/ai/status
+    server/llm.ts    Claude, OpenAI and Ollama adapters + error messages
+    server/ollama.ts Local-server check, Ollama status, disk and memory
+    server/requestGuard.ts  Rejects cross-site POSTs
     platforms.ts     Learning platforms and their search-link templates
     demoExtras.ts    Demo video searches, quizzes, course picks and verified featured links
 ```
+
+## 2.1 Website and downloads
+
+- **Routes:** `/` is the website (a static, pre-rendered server component, `src/app/page.tsx`); `/app` is the learning app (`src/app/app/page.tsx`), whose layout adds the demo banner. Electron loads `${url}/app`.
+- **Download flow:** `GET /api/download` reads `x-vercel-ip-country`, normalises it (`XX` when missing), and, unless the `ladderly_dl` cookie is set or the user agent looks like a crawler, calls `recordDownload`, then sets the cookie (1 year, httpOnly) and returns a 302 to `LADDERLY_DOWNLOAD_URL` or the GitHub "latest release" asset URL. electron-builder names the installer `Ladderly-Setup.exe` so that URL is stable.
+- **Storage:** `lib/server/downloadStats.ts` talks to Upstash Redis over its REST `/pipeline` endpoint with `fetch` (no extra dependency): `HINCRBY ladderly:downloads:countries <CC> 1` and `INCR ladderly:downloads:total`. It reads `KV_REST_API_URL`/`KV_REST_API_TOKEN` (Vercel's Upstash integration) or `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`. Without them, counting is a no-op and stats report `enabled: false`; errors are logged without details and never block the redirect.
+- **Map:** `GET /api/downloads` returns `{ enabled, total, countries }` with `s-maxage=60`. `components/site/DownloadMap.tsx` projects Natural Earth 110m country shapes (`world-atlas`, bundled) with `d3-geo`'s Natural Earth projection, maps ISO alpha-2 codes to the shapes' numeric ids with `i18n-iso-countries`, and shades countries on a log scale (5 levels). Country names come from `Intl.DisplayNames`. Ranks are numbers rather than flag emoji, because Windows doesn't draw flag emoji.
 
 ## 3. Request flow
 
@@ -213,6 +232,35 @@ The platform list is described to Claude in the schema and the prompt, but the S
 
 **Quiz flow** (`StageQuiz`): locked until every checkpoint in the stage is ticked → "Take the quiz" → one question at a time. Picking an option locks it, marks right (green) and wrong (red), and shows the explanation → score → retake. `page.tsx` saves the best score per stage in `SavedPath.quizScores`. `PathView` is keyed by path ID, so quiz state resets when you switch paths.
 
+### 5.2 AI engines
+
+```mermaid
+flowchart LR
+  UI["AI settings (browser)<br/>provider, model, own keys<br/>localStorage: ladderly:ai"] -- "POST /api/path<br/>{topic…, ai}" --> R["route.ts<br/>chooseEngine()"]
+  R -- "demo" --> D["demo.ts"]
+  R -- "ollama (local server only)" --> O["Ollama<br/>OLLAMA_HOST /api/chat"]
+  R -- "anthropic" --> C["Claude<br/>user key or server key"]
+  R -- "openai" --> G["OpenAI Responses API<br/>user key"]
+  O & C & G --> V["repairGeneratedPath()<br/>+ LearningPathSchema"]
+```
+
+- **Settings** (`lib/ai/models.ts`, `lib/ai/settingsStore.ts`): `AiSettingsSchema` (provider, model choices, optional keys; every field is length- or pattern-limited) is stored in `localStorage` under `ladderly:ai` and sent with each request (`generate.ts`). `"auto"` means the server decides: its own Anthropic key if it has one, otherwise the free demo.
+- **Engines** (`lib/server/llm.ts`): one function per engine with the same shape (prompts, abort signal, `onDelta` callback → full text and stop reason).
+  - Claude uses `betaZodOutputFormat`. Effort is omitted on Haiku 4.5, and refusal fallbacks are used only on Opus 5.
+  - OpenAI uses the Responses API with `zodTextFormat` (strict JSON Schema), streaming `response.output_text.delta`.
+  - Ollama uses `/api/chat` with `format` set to the JSON Schema, and `think: false`. Without the latter, "thinking" models spend minutes reasoning on a CPU.
+- **Local models** (`lib/server/ollama.ts`):
+  - `isLocalServer()` is true in the desktop app (`LADDERLY_LOCAL=1`, set by `electron/config.js`) and under `npm run dev`.
+  - `systemInfo()` reads free space where Ollama stores models (`fs.statfs`) and total memory (`os.totalmem`).
+  - `/api/ai/status`, `/api/ai/ollama/pull` (streams Ollama's progress) and `/api/ai/ollama/delete` back the settings screen.
+- **Choosing a model** (`OLLAMA_CATALOG`, `recommendOllamaModel`): nine suggested models with exact download sizes from Ollama's registry, a memory guideline and a quality rank. The recommendation is the highest-quality model that fits memory and disk (keeping 2 GB of disk spare). On an 8 GB laptop that's Qwen 3.5 4B; on 16 GB, Qwen 3.5 9B; on a 32 GB workstation, gpt-oss 20B.
+- **Speed**: local models get a compact-path instruction (`buildSystemPrompt(true)`). The loading panel estimates progress from characters received against the expected size, and shows elapsed time.
+- **Robustness** (`repairGeneratedPath`): before validation, any AI output has `featured`, `isTemplate` and per-stage `videos` removed, so models can never inject links. Over-long lists are trimmed, and malformed quiz questions and unknown platforms are dropped. Too-short lists still fail validation.
+- **Security**:
+  - **Cross-site requests:** `rejectCrossSite()` refuses POSTs whose `Origin` isn't this host. Without it, any website could drive the desktop app's local server.
+  - **Keys:** never logged. Errors are mapped to fixed messages, and only status codes are logged.
+  - **Ollama:** only on a local server, at a server-configured address.
+
 ## 6. Demo mode
 
 `isDemoMode()` in `demo.ts` is the single switch, evaluated on the server at request time:
@@ -231,7 +279,24 @@ Demo responses go through the same NDJSON stream, with small delays between chun
 
 - **Page state** (`page.tsx`): `status` (`idle` | `loading` + partial text | `error` + message), the last request (for Retry), the selected path ID, and an `AbortController` so a new request cancels the previous one.
 - **Saved paths** (`storage.ts`): a small external store over `localStorage` key `ladderly:paths` (falling back once to `pathfinder:paths`, the key used before the rename), read through React's `useSyncExternalStore`. Entries are validated with zod on load, and invalid ones are dropped. `useSavedPaths()` returns `null` during server rendering, so the page can tell "not loaded yet" from "no paths".
+- **Profile** (`profile.ts`): `ladderly:profile` holds `{ name?, skipped?, dailyGoal: 1 | 3 | 5, createdAt? }`. `isReturningVisit()` is true when a profile already existed when the page loaded, which picks "Welcome back" over "Welcome".
+- **Activity** (`activity.ts`): `ladderly:activity` maps local day keys to steps done, e.g. `{ "2026-10-06": 3 }`. On first read it is seeded from saved paths' `createdAt`. `recordActivity(delta)` changes today's count and never goes below zero, so tick/untick can't inflate it.
+- **Streaks** (`streaks.ts`, pure and unit-tested): `computeStreak(days, today)` walks back from today. A day with ≥1 step extends the streak; every 7 active days in a row earns a rest day (max 2); a missed day spends one, otherwise the streak ends. Today never breaks it (`atRisk` is true until the first step). `heatmapWeeks` builds 53 Sunday-start weeks for the heatmap; `heatLevel` buckets counts into 5 shades (0, 1–2, 3–5, 6–9, 10+).
+- **Celebrations** (`celebrate.ts`): every action goes through `climb(delta, change)`, which snapshots today's count, the streak and earned badges, applies the change, logs the step, snapshots again and calls `showToast` for each difference. The comparison happens in the event handler, not in an effect, so nothing fires on page load.
 - **Theme**: `localStorage` key `ladderly:theme` and a `.dark` class on `<html>`. An inline script in `layout.tsx` applies it before first paint, to avoid a flash of the wrong theme. `ThemeToggle` watches the class with a `MutationObserver`.
+
+### 7.1 Keeping the UI simple
+
+The audience is students, so the page shows one thing to do at a time. Details are revealed on demand rather than shown all at once:
+
+- **Home:** greeting, two chips (🔥 streak, 🎯 today's goal), the single next step with "Open" and "✓ Done". "My progress" toggles the week strip, daily goal choice, year heatmap, badges and "Change name".
+- **Form:** one input and one button. Level, hours and goal are behind "Options".
+- **Path:** stages are fold-out cards (`StageCard` keeps its own `open` state; the first unfinished stage starts open). The "Open" button on the next step dispatches the `ladderly:open-stage` window event so the right card opens before scrolling. Videos and courses, per-stage videos and resources, and common mistakes are all folded `Disclosure`s.
+- **Topic background:** `TopicBackground` is a fixed `-z-10` layer behind the page. `matchTopicTheme(topic)` in `lib/topicTheme.ts` maps keywords (whole words for short ones like "ai") to a family with two glow colours and five symbols. The page uses the typed topic when it matches, else the active path's topic, else `DEFAULT_THEME`. Glows animate with the `drift` keyframes and symbols with `floaty`; both are disabled under `prefers-reduced-motion`.
+- **Cursor glow:** `CursorGlow` is a fixed, `pointer-events-none` radial gradient (20 px, about half a centimetre) moved with `translate3d` once per animation frame from a passive `pointermove` listener, so React doesn't re-render on every mouse move. It only runs when `(pointer: fine)` matches.
+- **Shooting stars:** `ShootingStars` draws on one full-screen canvas (`pointer-events-none`, device-pixel-ratio aware). A passive `pointermove` listener checks whether the cursor is inside `#ladderly-logo` (the icon only); if so (and the 1.4 s cooldown has passed) it launches 4–6 stars from the centre of the logo. The brand row is `relative z-40`, above the `z-30` canvas, so the stars appear to slide out from underneath the logo. Each star has a slight turn per frame so it arcs, slows a little, keeps an 18-point trail and fades over its last third. The `requestAnimationFrame` loop stops when no stars are left.
+- **Logo twinkle:** `Logo` tags its star, glow and three sparkles with `logo-*` classes. `globals.css` animates them with `.brand:has(.brand-text:hover)`, so only hovering the word "Ladderly" triggers it (the word itself gets a `textGlow` text-shadow pulse) (`twinkle`, `glowPulse`, `sparkle` with staggered delays), using `transform-box: fill-box` so each shape scales around its own centre.
+- **Visual language:** neutral zinc surfaces, indigo for the one primary action, green for done, few borders and no all-caps labels.
 
 ## 8. Desktop architecture (Electron)
 
@@ -343,6 +408,7 @@ Every UI error shows **Retry**, which re-sends the last request.
 | localStorage | Database / accounts | No backend state needed. Private to the device |
 | `useSyncExternalStore` for storage | `useEffect` + `useState` | Correct hydration and no cascading renders |
 | Per-stage video previews from YouTube's frame thumbnails | Embedded iframes; autoplaying muted video | No player loads until clicked, so it's light and private. Feels like a Netflix preview |
+| Bring-your-own key + local Ollama | Hosted proxy with our own key; browser-only calls | Keeps Ladderly free to run: users pay their own provider (or nothing, locally), and the website can't run up costs |
 | Platform search links for AI paths | Let Claude write course/video URLs; Claude web search; YouTube Data API | Always valid and free, with no extra API key or per-search cost. Specific verified links are used where they've been checked (demo samples) |
 
 ## 12. Possible future work

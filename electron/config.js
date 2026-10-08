@@ -54,7 +54,7 @@ function ensureConfigFile(userDataDir) {
  * @returns {Record<string, string>} Variables to merge into the server's environment.
  */
 function configToEnv(config) {
-  const env = {};
+  const env = { LADDERLY_LOCAL: "1" }; // lets the local server use Ollama and report disk/memory
   const key = typeof config.anthropicApiKey === "string" ? config.anthropicApiKey.trim() : "";
   if (key) env.ANTHROPIC_API_KEY = key;
   env.DEMO_MODE = config.demoMode === false && key ? "false" : "true";

@@ -1,7 +1,8 @@
+import { getAiSettings } from "./ai/settingsStore";
 import type { LearningPath, PathRequest, StreamEvent } from "./schema";
 
 /**
- * Requests a learning path from `/api/path` and reads the streamed NDJSON response.
+ * Requests a learning path from `/api/path` (with the user's AI engine settings) and reads the streamed NDJSON response.
  * @param {PathRequest} request Topic plus optional level, hours per week and goal.
  * @param {(textSoFar: string) => void} onText Called on every chunk with all the raw JSON text received so far (for the live preview).
  * @param {AbortSignal} [signal] Optional signal to cancel the request.
@@ -15,7 +16,8 @@ export async function generatePath(
   const res = await fetch("/api/path", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request),
+    // The user's AI engine choice (and their own API key, if they added one) goes with the request.
+    body: JSON.stringify({ ...request, ai: getAiSettings() }),
     signal,
   });
 

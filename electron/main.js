@@ -58,7 +58,8 @@ function createWindow(url) {
   });
 
   win.once("ready-to-show", () => win.show());
-  win.loadURL(url);
+  // The learning app lives at /app (the site root is the download website).
+  win.loadURL(`${url}/app`);
   return win;
 }
 

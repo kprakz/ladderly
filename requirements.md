@@ -125,11 +125,53 @@ Many people want to learn a skill but never start because they don't know where 
 | FR-54 | Video cards behave like Netflix previews: on hover or keyboard focus a card zooms up, shows a play button, and cycles through still frames from inside the video (YouTube's auto-generated frames), with dots showing which frame is on screen. It returns to the cover image when the pointer leaves. Under "reduce motion", cards don't zoom or cycle. |
 | FR-55 | Video rows scroll sideways with arrow buttons that appear on hover, and only on a side with more to scroll to. |
 
+### 3.12 AI engines (free and bring-your-own)
+
+| ID | Requirement |
+|---|---|
+| FR-56 | An "AI engine" button in the header shows the engine in use and opens AI settings. Choices: the free demo; a local open-source model through Ollama; Claude with the user's own Anthropic API key; OpenAI GPT with the user's own OpenAI key. If the server has its own Anthropic key, "Claude (set up on this server)" is offered too. |
+| FR-57 | Local models are free and private and need no account. In the desktop app (or when run locally), AI settings show the computer's memory and free disk space, recommend the best model that fits both, and list suggested models from the Ollama library with exact download sizes, memory needs and a short note. Models that may not fit are flagged; models that can't fit on disk can't be downloaded. |
+| FR-58 | Users can download a suggested model with a live progress bar (and cancel it), switch between installed models (including ones installed outside Ladderly), and delete models to free space. If Ollama isn't installed or running, Ladderly explains how to install it. |
+| FR-59 | On the hosted website, the local-model option is shown as available only in the desktop app, since a website can't use the visitor's Ollama. |
+| FR-60 | Users can add their own Anthropic or OpenAI key and choose a model (Claude Opus 5 by default; Sonnet 5 and Haiku 4.5 offered. GPT-6.1 Sol by default; GPT-6 Astra and GPT-6 Luna offered). Usage is billed to the user's own account. Keys can be shown, hidden and removed. |
+| FR-61 | Every engine produces the same path format, validated the same way. Local models are asked for a compact path (4 stages, 2 quiz questions each) so it finishes in reasonable time. |
+| FR-62 | While a path is written, the loading panel shows the engine's name, an estimated progress bar, the elapsed time and the stage titles as they arrive. For local models it notes that a laptop can take a few minutes. |
+| FR-63 | Errors are specific and friendly: missing key, rejected key, rate limit or no credit, unreachable service, unknown model, model not downloaded, Ollama not running, incomplete output from a small model. |
+
+### 3.13 Welcome, progress and streaks
+
+| ID | Requirement |
+|---|---|
+| FR-64 | On the first visit, Ladderly asks "What should we call you?" in a dialog that can be skipped. The name (up to 40 characters) is saved only on the device. Skipping is remembered, so it isn't asked again. |
+| FR-65 | The top of the page greets the learner: "Welcome, {name}" on the first visit and "Welcome back, {name}" after that, with a "Change name" (or "Add your name") link. |
+| FR-66 | Each learning action counts as a "step" today: ticking a checkpoint (+1, unticking takes it back), finishing a stage quiz for the first time or beating the best score (+1), and starting a new path (+1). Existing users' paths are counted on the day they were created, so their history isn't empty. |
+| FR-67 | A GitHub-style activity heatmap shows the past year, one square per day, darker for more steps, with month and weekday labels, a legend, a tooltip per day, today outlined, and totals ("N steps done on M days in the last year"). On narrow screens it scrolls and starts at the latest weeks. |
+| FR-68 | A streak counts consecutive days with at least one step, and shows the current and best streak and the last 7 days. Today never breaks it: until midnight it says "Climb one step today to keep your streak". |
+| FR-69 | Rest days: every 7 days in a row earns one (holding up to 2). A missed day automatically uses a rest day instead of breaking the streak, and shows as ❄️. |
+| FR-70 | A daily goal of 1, 3 or 5 steps (3 by default) with a progress ring that turns green when it's reached. |
+| FR-71 | A "Today's next step" card shows the next unticked checkpoint in the current (or latest unfinished) path, with "✓ Done" and "Go to stage" (which scrolls to that stage). |
+| FR-72 | Ten milestone badges (first path, stage cleared, quiz ace, 3/7/30/100-day streaks, 3 paths, 50 steps, a finished path) are shown greyed out until earned. |
+| FR-74 | The interface stays simple for students: the home area shows only the greeting, two small chips (streak and today's goal) and the single next step. The week, daily goal, year heatmap, badges and "Change name" sit behind a "My progress" button. The form's level / hours / goal options are folded under "Options". In a path, only the current stage is open, videos and courses are folded into one "Videos & courses" section, and common mistakes are folded too. Wording is plain ("steps", "Checklist", "Final project"). |
+| FR-75 | The page background reflects the topic: two soft colour glows that drift slowly and a few faint floating symbols (🎸🎵 for music, 🐍 for python, 🧠📊 for AI, 🎤 for speaking, and about a dozen more families). It changes as the user types a recognised topic, otherwise follows the path on screen, and falls back to a neutral study theme. It is faint enough not to affect readability, ignores the mouse, is hidden from screen readers and stays still with reduced motion. |
+| FR-76 | A tiny soft glow (about half a centimetre), tinted with the topic colour, follows the mouse cursor anywhere in the app. It never blocks clicks, fades out when the mouse leaves the window, and is not shown on touch screens. |
+| FR-77 | When the cursor is on the Ladderly app icon (and only then), a burst of golden shooting stars slides out from under the logo, curving across the app with glowing trails before fading (at most one burst every 1.4 s). They never block clicks and are off on touch screens and with reduced motion. |
+| FR-78 | Hovering over the word "Ladderly" (and only the word) makes it glow gold, and makes the logo's star twinkle (it pulses, turns and brightens, and its glow swells) while three small sparkles blink around it in turn. Nothing happens anywhere else around the title. The logo is 52 px. It stays still with reduced motion. |
+| FR-73 | Short toasts celebrate the first step of the day (streak grows), reaching the daily goal, earning a rest day and earning a badge. They're announced to screen readers. |
+
+### 3.14 Website and downloads
+
+| ID | Requirement |
+|---|---|
+| FR-79 | The hosted site's home page (`/`) is a website about Ladderly: the logo, name and tagline, a short description, the maker's quote with LinkedIn and GitHub links, a picture of the app, how it works (3 steps), 8 features, the 4 AI options with their cost, a download section with install steps, a world map of downloads, an FAQ and a footer. It uses the same look as the app (light and dark mode, topic background, cursor glow, shooting stars from the logo). The learning app moves to `/app`; the desktop app opens `/app` directly. |
+| FR-80 | "Download for Windows" goes to `/api/download`, which redirects to the latest installer on GitHub Releases (`Ladderly-Setup.exe`, a stable name so the link never changes). "Try it in your browser" opens `/app`. |
+| FR-81 | Each download is counted by country, once per browser (cookie), skipping known crawlers. Only a two-letter country code and a number are stored, never IP addresses or personal data. A stats problem never blocks a download. |
+| FR-82 | "Climbers around the world" shows a world map with countries shaded by downloads, the total downloads, the number of countries and the top 9 countries. Hovering a country shows its count. Before counting is set up it says counts will appear soon; with no downloads yet it invites the visitor to be first. |
+
 ## 4. Non-functional requirements
 
 | ID | Category | Requirement |
 |---|---|---|
-| NFR-1 | Security | The Anthropic API key is only ever read on the server. It is never sent to the browser or the desktop window, never committed to git, and never bundled into the installer. |
+| NFR-1 | Security | API keys are only used by server code. A user's own key is stored only on their device (browser storage or the desktop app) and sent only with their own requests; the server never stores or logs it (only error status codes are logged, since provider messages can echo part of a key). The server's own key is never sent to the browser, never committed to git, and never bundled into the installer. |
 | NFR-2 | Security | The desktop window runs with context isolation and sandboxing, and without Node.js access. The local server listens on 127.0.0.1 only. |
 | NFR-3 | Cost | A deployment without an API key can never make paid API calls (see FR-33). |
 | NFR-4 | Performance | The first visible progress appears within about 1 second in demo mode. Real generation streams progress instead of blocking. |
@@ -137,17 +179,19 @@ Many people want to learn a skill but never start because they don't know where 
 | NFR-6 | Reliability | Invalid or truncated model output never reaches the UI unvalidated (see FR-16). |
 | NFR-7 | Maintainability | Every function has a short description of what it does, its inputs and its output, with data types. The code is split into small modules with one job each (see `design.md`). |
 | NFR-8 | Compatibility | Web: current Chrome, Edge, Firefox and Safari. Desktop: Windows 10/11, 64-bit. Development: Node.js 20.9+. |
+| NFR-9 | Security | Ollama is only reachable from a local server (desktop app, `npm run dev`, or `LADDERLY_LOCAL=1`), at an address set on the server (`OLLAMA_HOST`), never one sent by the browser. Downloads are limited to the suggested catalog, and deletes to installed models. All POST endpoints reject cross-site requests (checked with the `Origin` header), so other websites can't drive the local server. |
 
 ## 5. Constraints and assumptions
 
 - Stack: Next.js (App Router), TypeScript, Tailwind CSS, zod, the Anthropic TypeScript SDK and Electron.
-- Model: `claude-opus-5`, with server-side refusal fallbacks enabled.
+- Models: `claude-opus-5` by default (server-side refusal fallbacks enabled on Opus 5). Users can choose Claude Sonnet 5 / Haiku 4.5, OpenAI GPT-6.1 Sol / GPT-6 Astra / GPT-6 Luna, or a local Ollama model.
+- Local model speed depends on hardware: about 7 tokens/second on a laptop without a graphics card (so a compact path can take 5–15 minutes), and much faster with a GPU.
 - Progress is stored per device (browser localStorage). There are no user accounts and no sync between devices.
 - The desktop installer is not code-signed, so Windows SmartScreen may show a warning on first run.
 
 ## 6. Out of scope
 
-- User accounts, cloud sync and sharing paths with others
+- User accounts, cloud sync and sharing paths with others (the name, streak and activity stay on one device and browser)
 - Editing generated paths
 - Links to specific courses or videos for AI-generated paths (they get verified platform searches instead; see FR-46)
 - macOS, Linux and mobile app-store builds
@@ -167,5 +211,7 @@ Many people want to learn a skill but never start because they don't know where 
 | Every demo path validates against both the stored and the generated schema, and every featured video and course URL loads | FR-45 to FR-48 |
 | Ticking a stage's checkpoints unlocks its quiz; answering shows right/wrong with an explanation, and the best score survives a reload | FR-49 to FR-51 |
 | A path saved in the old format (no quiz, courses or video search) still loads | FR-52 |
+| `/api/ai/status` reports local mode, Ollama models, free disk and memory; a cross-site POST gets 403; a non-catalog download is refused; a missing key gives a clear 400; a fake Claude/OpenAI key gives a "key rejected" message, and the key never appears in the server log; a local Ollama model generates a valid path end to end | FR-56 to FR-63, NFR-1, NFR-9 |
 | Hovering a video card zooms it and cycles its frames, leaving resets it; dropdowns start closed and open on click; scroll arrows appear only where there's more to see; every per-week video ID is confirmed via YouTube oEmbed | FR-45, FR-46, FR-54, FR-55 |
+| A first visit asks for a name and then says "Welcome, {name}"; a reload says "Welcome back". Ticking a checkpoint fills today's heatmap square and goal chip, the first step of the day shows a streak toast, and with activity on the two previous days the streak reads 3 days and the "On fire" badge is earned. The streak, rest-day and heatmap logic pass their unit tests | FR-64 to FR-74 |
 | An unknown topic in demo mode shows the template notice and no quiz; "machine learning" shows the detailed ML path with topic quizzes | FR-34, FR-49, FR-53 |

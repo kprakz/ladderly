@@ -19,6 +19,110 @@
   }
 }
 
+/* Topic background: the glows drift slowly, the symbols bob and tilt a little. */
+@keyframes drift {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(12vw, 8vh) scale(1.15);
+  }
+}
+
+@keyframes floaty {
+  from {
+    transform: translateY(0) rotate(-6deg);
+  }
+  to {
+    transform: translateY(-36px) rotate(6deg);
+  }
+}
+
+/* Logo twinkle: when the cursor is over the word "Ladderly", the word glows and the logo's star pulses and sparkles blink. */
+.logo-star,
+.logo-glow,
+.logo-sparkle {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.logo-sparkle {
+  opacity: 0;
+}
+.brand:has(.brand-text:hover) .logo-star {
+  animation: twinkle 0.9s ease-in-out infinite;
+}
+.brand:has(.brand-text:hover) .logo-glow {
+  animation: glowPulse 0.9s ease-in-out infinite;
+}
+.brand:has(.brand-text:hover) .logo-sparkle {
+  animation: sparkle 1.2s ease-in-out infinite;
+}
+.brand:has(.brand-text:hover) .logo-sparkle:nth-child(2) {
+  animation-delay: 0.4s;
+}
+.brand:has(.brand-text:hover) .logo-sparkle:nth-child(3) {
+  animation-delay: 0.8s;
+}
+.brand-text:hover {
+  animation: textGlow 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-text:hover,
+  .brand:has(.brand-text:hover) .logo-star,
+  .brand:has(.brand-text:hover) .logo-glow,
+  .brand:has(.brand-text:hover) .logo-sparkle {
+    animation: none;
+  }
+}
+
+@keyframes textGlow {
+  0%,
+  100% {
+    text-shadow: 0 0 6px rgba(250, 204, 21, 0.35);
+  }
+  50% {
+    text-shadow:
+      0 0 14px rgba(250, 204, 21, 0.75),
+      0 0 28px rgba(250, 204, 21, 0.35);
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.25) rotate(12deg);
+    filter: brightness(1.35);
+  }
+}
+
+@keyframes glowPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.35);
+  }
+}
+
+@keyframes sparkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 html {
   color-scheme: light;
 }

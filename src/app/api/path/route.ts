@@ -1,32 +1,45 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
+import { AiSettingsSchema, type AiSettings } from "@/lib/ai/models";
 import { getDemoPath, isDemoMode } from "@/lib/demo";
-import { buildUserPrompt, SYSTEM_PROMPT } from "@/lib/prompt";
+import { buildSystemPrompt, buildUserPrompt } from "@/lib/prompt";
+import { LearningPathSchema, PathRequestSchema, repairGeneratedPath, type StreamEvent } from "@/lib/schema";
 import {
-  dropUnknownPlatforms,
-  GeneratedPathSchema,
-  LearningPathSchema,
-  PathRequestSchema,
-  type StreamEvent,
-} from "@/lib/schema";
+  describeLlmError,
+  generateWithClaude,
+  generateWithOllama,
+  generateWithOpenAI,
+  type GenerateArgs,
+  type GenerateOutcome,
+} from "@/lib/server/llm";
+import { isLocalServer } from "@/lib/server/ollama";
+import { rejectCrossSite } from "@/lib/server/requestGuard";
 
-// The SDK reads ANTHROPIC_API_KEY from the environment (.env.local). This file only runs on the server.
-const client = new Anthropic();
+/** An engine chosen for one request: what to call it, and how to run it. */
+type Engine = { name: string; run: (args: GenerateArgs) => Promise<GenerateOutcome>; compact: boolean };
 
 /**
- * `POST /api/path`: validates the request, then streams a learning path back as NDJSON events
- * (`delta` chunks, then one `done` or `error`). Serves sample data in demo mode, otherwise calls Claude.
- * @param {Request} req HTTP request whose JSON body is a `PathRequest`.
+ * `POST /api/path`: validates the request, picks the AI engine from the user's settings, then streams a learning
+ * path back as NDJSON events (`delta` chunks, then one `done` or `error`). Engines: the free demo, a local Ollama
+ * model (only when this server runs on the user's computer), or Claude / OpenAI with the user's own key (or the
+ * server's key, if it has one).
+ * @param {Request} req HTTP request whose JSON body is a `PathRequest` plus an optional `ai` settings object.
  * @returns {Promise<Response>} A 400 JSON error for invalid input, otherwise a streaming `application/x-ndjson` response.
  */
 export async function POST(req: Request): Promise<Response> {
-  const body = await req.json().catch(() => null);
+  const blocked = rejectCrossSite(req);
+  if (blocked) return blocked;
+  const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
   const parsed = PathRequestSchema.safeParse(body);
   if (!parsed.success) {
     return Response.json({ error: parsed.error.issues[0]?.message ?? "Invalid request" }, { status: 400 });
   }
-  if (isDemoMode()) return demoResponse(parsed.data.topic);
+  const ai = AiSettingsSchema.safeParse(body?.ai ?? {});
+  if (!ai.success) return Response.json({ error: "Invalid AI settings. Open AI settings and check them." }, { status: 400 });
 
+  const choice = chooseEngine(ai.data);
+  if (choice === "demo") return demoResponse(parsed.data.topic);
+  if (typeof choice === "string") return Response.json({ error: choice }, { status: 400 });
+
+  const engine = choice;
   const stream = new ReadableStream({
     async start(controller) {
       /**
@@ -37,40 +50,30 @@ export async function POST(req: Request): Promise<Response> {
       const send = (event: StreamEvent) => controller.enqueue(encodeEvent(event));
 
       try {
-        const claude = client.beta.messages.stream(
-          {
-            model: "claude-opus-5",
-            max_tokens: 32000, // room for stages, quizzes and course picks
-            output_config: { effort: "medium", format: betaZodOutputFormat(GeneratedPathSchema) },
-            // If a safety classifier declines, retry server-side on Anthropic's recommended fallback model.
-            betas: ["server-side-fallback-2026-07-01"],
-            fallbacks: "default",
-            system: SYSTEM_PROMPT,
-            messages: [{ role: "user", content: buildUserPrompt(parsed.data) }],
-          },
-          { signal: req.signal },
-        );
+        const { text, stop } = await engine.run({
+          system: buildSystemPrompt(engine.compact),
+          user: buildUserPrompt(parsed.data),
+          signal: req.signal,
+          onDelta: (t) => send({ type: "delta", text: t }),
+        });
 
-        let text = "";
-        for await (const event of claude) {
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            text += event.delta.text;
-            send({ type: "delta", text: event.delta.text });
-          }
-        }
-
-        const message = await claude.finalMessage();
-        if (message.stop_reason === "refusal") {
-          send({ type: "error", message: "Claude declined to create a path for this topic. Try rephrasing it." });
-        } else if (message.stop_reason === "max_tokens") {
+        if (stop === "refusal") {
+          send({ type: "error", message: `${engine.name} declined to create a path for this topic. Try rephrasing it.` });
+        } else if (stop === "length") {
           send({ type: "error", message: "The response was cut off before it finished. Please retry." });
         } else {
-          const result = GeneratedPathSchema.safeParse(dropUnknownPlatforms(safeJsonParse(text)));
+          const result = LearningPathSchema.safeParse(repairGeneratedPath(safeJsonParse(text)));
           if (result.success) send({ type: "done", path: result.data });
-          else send({ type: "error", message: "Claude returned a path in an unexpected format. Please retry." });
+          else
+            send({
+              type: "error",
+              message: engine.compact
+                ? `${engine.name} returned an incomplete path. Small local models sometimes do; retry, or try a larger model.`
+                : `${engine.name} returned a path in an unexpected format. Please retry.`,
+            });
         }
       } catch (err) {
-        if (!req.signal.aborted) send({ type: "error", message: describeError(err) });
+        if (!req.signal.aborted) send({ type: "error", message: describeLlmError(err, engine.name) });
       } finally {
         controller.close();
       }
@@ -78,6 +81,44 @@ export async function POST(req: Request): Promise<Response> {
   });
 
   return new Response(stream, { headers: NDJSON_HEADERS });
+}
+
+/**
+ * Picks the engine for a request from the user's AI settings.
+ * @param {AiSettings} ai The validated settings sent by the browser.
+ * @returns {Engine | "demo" | string} An engine to run, "demo" for sample data, or an error message to return.
+ */
+function chooseEngine(ai: AiSettings): Engine | "demo" | string {
+  switch (ai.provider) {
+    case "demo":
+      return "demo";
+    case "ollama": {
+      if (!isLocalServer()) {
+        return "Local models only work in the Ladderly desktop app (or when you run Ladderly on your own computer). Choose another engine in AI settings.";
+      }
+      if (!ai.ollamaModel) return "Choose a local model in AI settings first.";
+      const model = ai.ollamaModel;
+      return { name: "The local model", compact: true, run: (args) => generateWithOllama(model, args) };
+    }
+    case "anthropic": {
+      const key = ai.anthropicKey || process.env.ANTHROPIC_API_KEY;
+      if (!key) return "Add your Anthropic API key in AI settings first.";
+      const model = ai.anthropicModel ?? "claude-opus-5";
+      return { name: "Claude", compact: false, run: (args) => generateWithClaude(key, model, args) };
+    }
+    case "openai": {
+      const key = ai.openaiKey || process.env.OPENAI_API_KEY;
+      if (!key) return "Add your OpenAI API key in AI settings first.";
+      const model = ai.openaiModel ?? "gpt-6.1-sol";
+      return { name: "OpenAI", compact: false, run: (args) => generateWithOpenAI(key, model, args) };
+    }
+    default: {
+      // "auto": the server's own setup decides (its Anthropic key if it has one, otherwise the free demo).
+      if (isDemoMode()) return "demo";
+      const key = process.env.ANTHROPIC_API_KEY as string;
+      return { name: "Claude", compact: false, run: (args) => generateWithClaude(key, "claude-opus-5", args) };
+    }
+  }
 }
 
 const NDJSON_HEADERS = { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store" };
@@ -140,21 +181,4 @@ function safeJsonParse(text: string): unknown {
   } catch {
     return null;
   }
-}
-
-/**
- * Turns an error from the Anthropic SDK (or anything else) into a message that is safe to show users.
- * @param {unknown} err The caught error.
- * @returns {string} A short, user-friendly explanation.
- */
-function describeError(err: unknown): string {
-  if (err instanceof Anthropic.AuthenticationError) return "The Anthropic API key is invalid. Check your API key settings.";
-  if (err instanceof Anthropic.RateLimitError) return "Rate limited by the Anthropic API. Wait a moment and retry.";
-  if (err instanceof Anthropic.APIConnectionError) return "Couldn't reach the Anthropic API. Check your connection.";
-  if (err instanceof Anthropic.APIError) {
-    console.error("Anthropic API error", err.status, err.message);
-    return `The Anthropic API returned an error${err.status ? ` (${err.status})` : ""}. Please retry.`;
-  }
-  console.error(err);
-  return "Something went wrong while generating the path. Please retry.";
 }

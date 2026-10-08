@@ -7,17 +7,28 @@ const field =
   "rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-900";
 
 /**
- * Form for the topic and the optional level, hours per week and goal.
+ * Form for the topic, with the optional level, hours per week and goal tucked behind "Options" to keep it simple.
  * @param {Object} props
  * @param {(req: PathRequest) => void} props.onSubmit Called with the cleaned-up request when the form is submitted.
  * @param {boolean} props.disabled Disables the submit button (while a path is being generated).
+ * @param {(topic: string) => void} [props.onTopicChange] Called as the topic is typed (for the topic background).
  * @returns {JSX.Element} The form.
  */
-export function PathForm({ onSubmit, disabled }: { onSubmit: (req: PathRequest) => void; disabled: boolean }) {
+export function PathForm({
+  onSubmit,
+  disabled,
+  onTopicChange,
+}: {
+  onSubmit: (req: PathRequest) => void;
+  disabled: boolean;
+  onTopicChange?: (topic: string) => void;
+}) {
   const [topic, setTopic] = useState("");
   const [level, setLevel] = useState("");
   const [hours, setHours] = useState("");
   const [goal, setGoal] = useState("");
+  const [showOptions, setShowOptions] = useState(false);
+  const optionCount = [level, hours, goal].filter(Boolean).length;
 
   /**
    * Converts the form fields into a `PathRequest` (empty options become `undefined`, hours are clamped to 1–80).
@@ -37,11 +48,14 @@ export function PathForm({ onSubmit, disabled }: { onSubmit: (req: PathRequest) 
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-2">
       <div className="flex flex-col gap-2 sm:flex-row">
         <input
           value={topic}
-          onChange={(e) => setTopic(e.target.value)}
+          onChange={(e) => {
+            setTopic(e.target.value);
+            onTopicChange?.(e.target.value);
+          }}
           placeholder='What do you want to learn? e.g. "guitar", "machine learning"'
           aria-label="Skill or topic"
           maxLength={120}
@@ -57,6 +71,16 @@ export function PathForm({ onSubmit, disabled }: { onSubmit: (req: PathRequest) 
         </button>
       </div>
 
+      <button
+        type="button"
+        onClick={() => setShowOptions((o) => !o)}
+        aria-expanded={showOptions}
+        className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+      >
+        Options{optionCount > 0 ? ` (${optionCount})` : ""} {showOptions ? "▴" : "▾"}
+      </button>
+
+      {showOptions && (
       <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
         <label className="flex flex-col gap-1">
           <span className="text-xs text-zinc-500">Current level</span>
@@ -89,6 +113,7 @@ export function PathForm({ onSubmit, disabled }: { onSubmit: (req: PathRequest) 
           </select>
         </label>
       </div>
+      )}
     </form>
   );
 }
