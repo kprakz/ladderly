@@ -41,3 +41,16 @@ export function buildUserPrompt(req: PathRequest): string {
   lines.push("", "Create the learning path.");
   return lines.join("\n");
 }
+
+/** Extra instruction for slower local models, so a path finishes in reasonable time on a laptop. */
+const COMPACT_NOTE = `
+- Keep it compact so it generates quickly: exactly 4 stages, 3-4 concepts and 2 checkpoints per stage, 1 practice task per stage, exactly 2 quiz questions per stage, and 3 courses. Stay just as specific.`;
+
+/**
+ * The system prompt for a given engine.
+ * @param {boolean} compact True for local models: asks for a shorter (but equally specific) path.
+ * @returns {string} The system prompt.
+ */
+export function buildSystemPrompt(compact: boolean): string {
+  return compact ? SYSTEM_PROMPT + COMPACT_NOTE : SYSTEM_PROMPT;
+}

@@ -7,10 +7,14 @@ Type any skill or topic ("guitar", "machine learning", "public speaking") and ge
 - Videos and courses: a "Videos for this week" dropdown per stage with Netflix-style hover previews, plus free and paid course links in dropdowns
 - A short quiz for each stage that unlocks when you finish it, with explanations and your best score saved
 - Tick off checkpoint items and track progress per stage and overall
+- A calm, student-friendly layout: a personal welcome ("Welcome back, Alex"), your streak, today's goal and the one next step. A GitHub-style heatmap, ❄️ rest days and badges are one click away under "My progress"
 - Paths and progress are saved in your browser (localStorage)
 - Live streaming preview while the path is generated, and friendly errors with a retry button
 - Responsive, with light and dark mode
+- Choose your AI engine: the free demo, a **free local open-source model** (Ollama, recommended for your computer), or **your own Claude or OpenAI key**
 - Runs as a website or as an installable **Windows desktop app**
+
+The hosted site has two parts: the **website** at `/` (what Ladderly is, download button, a world map of downloads) and the **app** at `/app`.
 
 Documentation: [requirements.md](requirements.md) (what it must do) · [design.md](design.md) (how it's built).
 
@@ -43,6 +47,21 @@ ANTHROPIC_API_KEY=sk-ant-...
 ```
 
 Restart the dev server after changing `.env.local`. The key is only read on the server (`src/app/api/path/route.ts`) and is never sent to the browser. `.env.local` is git-ignored.
+
+## AI engines
+
+Open **⚙️ AI** in the header to choose what writes your paths:
+
+| Engine | Cost | Where | Setup |
+|---|---|---|---|
+| Free demo | Free | Everywhere | None. Detailed paths for 4 topics, a template for others |
+| Local model (Ollama) | Free, private | Desktop app, or `npm run dev` | Install [Ollama](https://ollama.com/download), then pick a model in AI settings. Ladderly recommends one for your memory and disk, and downloads it for you |
+| Claude | Your Anthropic account | Everywhere | Paste your key from [console.anthropic.com](https://console.anthropic.com/settings/keys) |
+| OpenAI GPT | Your OpenAI account | Everywhere | Paste your key from [platform.openai.com](https://platform.openai.com/api-keys) |
+
+Your own keys are saved only on your device and sent only with your requests. They're never stored or logged by the server.
+
+Server settings (optional, in `.env.local`): `ANTHROPIC_API_KEY` (makes Claude the default), `OPENAI_API_KEY`, `OLLAMA_HOST` (default `127.0.0.1:11434`), and `LADDERLY_LOCAL=1` (enables local models when self-hosting with `npm start` on your own machine).
 
 ## Run
 
@@ -84,6 +103,15 @@ Save the file, then choose **File → Restart to Apply Settings**. The file live
 
 Don't add an `ANTHROPIC_API_KEY` environment variable in Vercel. Without it the site stays in demo mode and can never make paid API calls.
 
+### Website downloads and the country map
+
+The website's **Download for Windows** button goes to `/api/download`, which counts the download by country and redirects to the installer on GitHub Releases.
+
+1. **Publish the installer.** Run `npm run desktop:build`, then create a release on GitHub (Releases → Draft a new release, e.g. tag `v0.1.0`) and attach `dist/Ladderly-Setup.exe`. The button always points at `https://github.com/kprakz/ladderly/releases/latest/download/Ladderly-Setup.exe`, so new releases work with no code change. To host it somewhere else, set `LADDERLY_DOWNLOAD_URL`.
+2. **Turn on counting (optional, free).** In the Vercel project, open **Storage → Marketplace → Upstash (Redis)**, create a free database and connect it to the project. That sets `KV_REST_API_URL` and `KV_REST_API_TOKEN`. Redeploy. Until then downloads still work; the map just says counts will appear soon.
+
+Only a two-letter country code (from Vercel's `x-vercel-ip-country` header) and a count are stored: no IP addresses or personal data. Each browser is counted once (a `ladderly_dl` cookie), and crawlers are skipped.
+
 ## How it works
 
 1. The form posts `{ topic, level?, hoursPerWeek?, goal? }` to `POST /api/path`, which is validated with zod.
@@ -112,21 +140,36 @@ src/
     layout.tsx          # Root layout + no-flash theme script
     icon.svg            # Browser tab icon (same logo)
     apple-icon.png      # Home-screen icon for iPhone/iPad
-    page.tsx            # Main page: form, loading/error states, path view, history
+    page.tsx            # The website: features, AI options, download, world map, FAQ
+    app/page.tsx        # The learning app (/app): form, loading/error states, path view, history
+    app/layout.tsx      # Adds the demo banner to the app
+    api/download/       # Counts a download by country, then redirects to the installer
+    api/downloads/      # Download totals per country, for the map
     globals.css         # Tailwind + class-based dark mode
   components/
     PathForm.tsx        # Topic input and optional level / hours / goal
     PathView.tsx        # Summary, overall progress, timeline, finish line, pitfalls
-    StageCard.tsx       # One stage in the timeline, with checkpoint checkboxes
+    StageCard.tsx       # One fold-out stage: learn, practise, checklist, videos, quiz
     StatusPanels.tsx    # Loading (live stage preview) and error (retry) panels
     LearningLinks.tsx   # "Learn with" panel: video row, free and paid course dropdowns
     VideoRow.tsx        # Netflix-style scrolling row of video cards + "More on YouTube"
     VideoCard.tsx       # Video card with hover zoom and rotating in-video frames
     Disclosure.tsx      # Accessible animated dropdown
     StageQuiz.tsx       # Per-stage multiple-choice quiz
+    AiSettingsDialog.tsx  # AI engine settings: demo, local models (Ollama), Claude, OpenAI
+    DemoBannerText.tsx  # Demo banner text (hidden when another engine is chosen)
     DemoBanner.tsx      # "Demo version" banner, rendered per request
     Logo.tsx            # The Ladderly logo as an inline SVG
     History.tsx         # Saved paths list
+    ProgressDashboard.tsx  # Greeting, streak and goal chips, next step, "My progress" panel
+    ActivityHeatmap.tsx # GitHub-style contribution graph of learning activity
+    NameDialog.tsx      # First-visit "What should we call you?" dialog
+    Toaster.tsx         # Celebration toasts
+    TopicBackground.tsx # Soft animated background that matches the topic
+    CursorGlow.tsx      # Soft glow that follows the mouse
+    AuthorNote.tsx      # Maker's quote with LinkedIn and GitHub links
+    ShootingStars.tsx   # Shooting stars from the logo when the cursor is on it
+    site/DownloadMap.tsx  # World map of downloads by country (d3-geo + world-atlas)
     ProgressBar.tsx
     ThemeToggle.tsx
   lib/
@@ -135,8 +178,17 @@ src/
     demo.ts             # Demo-mode switch and sample paths
     demoExtras.ts       # Demo quizzes, video searches, course picks and verified featured links
     platforms.ts        # Learning platforms and their search-link templates
+    ai/                 # Engine choices, model catalog, settings store, status hook
+    server/             # Engine adapters (Claude, OpenAI, Ollama), local-server helpers, request guard, download stats
     generate.ts         # Client helper that reads the NDJSON stream
     storage.ts          # localStorage-backed store (useSyncExternalStore)
+    profile.ts          # Name and daily goal
+    activity.ts         # Rungs climbed per day
+    streaks.ts          # Streak, rest-day and heatmap maths
+    badges.ts           # Milestone badges
+    celebrate.ts        # Logs a step and shows celebration toasts
+    dates.ts            # Local day keys and day arithmetic
+    topicTheme.ts       # Topic keywords → background colours and symbols
 ```
 
 ## Customizing
@@ -144,4 +196,5 @@ src/
 - **Model / effort:** edit `model` and `output_config.effort` in `src/app/api/path/route.ts`. `effort: "medium"` keeps responses quick. Raise it for more considered paths.
 - **Path shape:** edit `LearningPathSchema` in `src/lib/schema.ts`. The prompt schema and the validation both come from it.
 - **Tone / rules:** edit `SYSTEM_PROMPT` in `src/lib/prompt.ts`.
-- **Reset saved data:** clear the `ladderly:paths` and `ladderly:theme` localStorage keys.
+- **Reset saved data:** clear the `ladderly:paths`, `ladderly:profile`, `ladderly:activity`, `ladderly:ai` and `ladderly:theme` localStorage keys.
+- **Streak rules:** `DAYS_PER_REST_DAY` and `MAX_REST_DAYS` in `src/lib/streaks.ts`; badges in `src/lib/badges.ts`.

@@ -7,8 +7,8 @@ import { VideoRow } from "./VideoRow";
 type LinkItem = { key: string; title: string; subtitle: string; url: string; kind: CourseKind };
 
 /**
- * "Learn with" panel for a path: a Netflix-style row of recommended videos (verified demo picks), then free and
- * paid course links, each in its own dropdown. Course links are either verified course pages or searches on known
+ * "Videos & courses" for a path, folded by default: a Netflix-style row of recommended videos (verified demo
+ * picks), then free and paid course links. Course links are either verified course pages or searches on known
  * platforms, so every link works. Renders nothing for older saved paths that have no links.
  * @param {Object} props
  * @param {LearningPath} props.path The learning path.
@@ -39,36 +39,22 @@ export function LearningLinks({ path, topic }: { path: LearningPath; topic: stri
   const paid = items.filter((i) => i.kind === "paid");
 
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5 dark:border-zinc-800 dark:bg-zinc-900">
-      <h3 className="text-lg font-semibold">Learn with</h3>
-
-      {videos.length > 0 && (
+    <Disclosure title="Videos & courses" icon="🎓" count={videos.length + items.length} className="bg-white dark:bg-zinc-900">
+      {videos.length > 0 && <VideoRow videos={videos} searchQuery={`${topic} for beginners`} />}
+      {free.length > 0 && (
         <>
-          <h4 className="mt-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">Recommended videos</h4>
-          <VideoRow videos={videos} searchQuery={`${topic} for beginners`} />
+          <h4 className="mt-4 text-sm font-medium text-zinc-500">Free</h4>
+          <LinkList items={free} />
         </>
       )}
-
-      {items.length > 0 && (
-        <div className="mt-3 space-y-2">
-          {free.length > 0 && (
-            <Disclosure title="Free courses & resources" icon="🎓" count={free.length}>
-              <LinkList items={free} />
-            </Disclosure>
-          )}
-          {paid.length > 0 && (
-            <Disclosure title="Paid courses" icon="💳" count={paid.length}>
-              <LinkList items={paid} />
-            </Disclosure>
-          )}
-        </div>
+      {paid.length > 0 && (
+        <>
+          <h4 className="mt-4 text-sm font-medium text-zinc-500">Paid</h4>
+          <LinkList items={paid} />
+        </>
       )}
-
-      <p className="mt-4 text-xs text-zinc-500">
-        Links open the provider&apos;s site. Search links show that site&apos;s current results. Ladderly isn&apos;t
-        affiliated with any provider; prices and availability may change.
-      </p>
-    </section>
+      <p className="mt-4 text-xs text-zinc-400">Links open the provider&apos;s site. Ladderly isn&apos;t affiliated with them.</p>
+    </Disclosure>
   );
 }
 
@@ -81,7 +67,7 @@ export function LearningLinks({ path, topic }: { path: LearningPath; topic: stri
 function LinkList({ items }: { items: LinkItem[] }) {
   return (
     <div>
-      <ul className="space-y-3 pt-1">
+      <ul className="mt-2 space-y-3">
         {items.map((item) => (
           <li key={item.key}>
             <a

@@ -46,7 +46,7 @@ function read(): SavedPath[] {
  * Returns the current saved paths, reading localStorage only on first use.
  * @returns {SavedPath[]} The cached list; the same array instance until it changes (required by useSyncExternalStore).
  */
-function getSnapshot(): SavedPath[] {
+export function getSavedPaths(): SavedPath[] {
   cache ??= read();
   return cache;
 }
@@ -67,7 +67,7 @@ function subscribe(listener: () => void) {
  * @returns {void}
  */
 export function updatePaths(update: (prev: SavedPath[]) => SavedPath[]): void {
-  cache = update(getSnapshot());
+  cache = update(getSavedPaths());
   try {
     localStorage.setItem(KEY, JSON.stringify(cache));
   } catch {
@@ -81,7 +81,7 @@ export function updatePaths(update: (prev: SavedPath[]) => SavedPath[]): void {
  * @returns {SavedPath[] | null} The saved paths, or `null` during server rendering and before hydration.
  */
 export function useSavedPaths(): SavedPath[] | null {
-  return useSyncExternalStore(subscribe, getSnapshot, () => null);
+  return useSyncExternalStore(subscribe, getSavedPaths, () => null);
 }
 
 /**

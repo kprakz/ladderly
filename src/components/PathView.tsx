@@ -1,13 +1,14 @@
 "use client";
 
-import { progressOf, type SavedPath } from "@/lib/storage";
+import { checkKey, progressOf, type SavedPath } from "@/lib/storage";
+import { Disclosure } from "./Disclosure";
 import { LearningLinks } from "./LearningLinks";
 import { ProgressBar } from "./ProgressBar";
 import { StageCard } from "./StageCard";
 
 /**
- * A full learning path: title, summary, overall progress, videos and courses, stage timeline (with quizzes),
- * finish line and pitfalls.
+ * A full learning path, kept calm: title, one-line summary and progress; videos and courses folded; the stages as
+ * fold-out cards with only the current one open; then the final project and (folded) common pitfalls.
  * @param {Object} props
  * @param {SavedPath} props.saved The saved path, including which checkpoint items are checked and quiz scores.
  * @param {(key: string) => void} props.onToggle Called with a checkpoint key when a checkbox changes.
@@ -26,29 +27,24 @@ export function PathView({
   const { path, request } = saved;
   const checked = new Set(saved.checked);
   const progress = progressOf(saved);
+  // The first stage with an unticked checkpoint is "current" and starts open.
+  const current = path.stages.findIndex((s, i) => s.checkpoint.some((_, j) => !checked.has(checkKey(i, j))));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
         <h2 className="text-2xl font-bold capitalize">{request.topic}</h2>
         <p className="mt-1 text-zinc-600 dark:text-zinc-400">{path.summary}</p>
         <div className="mt-3 flex items-center gap-3">
           <ProgressBar percent={progress.percent} className="flex-1" />
-          <span className="text-sm tabular-nums text-zinc-500">{progress.percent}% complete</span>
+          <span className="text-sm tabular-nums text-zinc-500">{progress.percent}%</span>
         </div>
       </div>
 
       {path.isTemplate && (
-        <div
-          role="note"
-          className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
-        >
-          <p className="font-semibold">This is a general template, not a detailed plan for {request.topic}.</p>
-          <p className="mt-1">
-            The free demo has detailed paths, with quizzes, for guitar, python, public speaking and machine learning.
-            With an Anthropic API key, Ladderly writes a detailed path and quiz for any topic.
-          </p>
-        </div>
+        <p role="note" className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+          This is a general plan. For a detailed plan on {request.topic}, pick another AI in ⚙️ Settings.
+        </p>
       )}
 
       <LearningLinks path={path} topic={request.topic} />
@@ -61,6 +57,7 @@ export function PathView({
             stage={stage}
             index={i}
             isLast={i === path.stages.length - 1}
+            isCurrent={i === current}
             checked={checked}
             quizBest={saved.quizScores?.[String(i)]}
             onToggle={onToggle}
@@ -69,24 +66,19 @@ export function PathView({
         ))}
       </ol>
 
-      <section className="rounded-xl border border-emerald-300 bg-emerald-50 p-5 dark:border-emerald-800 dark:bg-emerald-950/40">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
-          🏁 Finish line
-        </h3>
+      <section className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+        <h3 className="text-sm font-medium text-zinc-500">🏁 Final project</h3>
         <p className="mt-1 font-semibold">{path.finishLine.name}</p>
-        <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">{path.finishLine.description}</p>
+        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">{path.finishLine.description}</p>
       </section>
 
-      <section className="rounded-xl border border-amber-300 bg-amber-50 p-5 dark:border-amber-800 dark:bg-amber-950/40">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
-          Common pitfalls
-        </h3>
-        <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-zinc-700 dark:text-zinc-300">
+      <Disclosure title="Common mistakes to avoid" icon="⚠️" className="bg-white dark:bg-zinc-900">
+        <ul className="list-disc space-y-1 pl-4 text-sm text-zinc-600 dark:text-zinc-300">
           {path.pitfalls.map((p) => (
             <li key={p}>{p}</li>
           ))}
         </ul>
-      </section>
+      </Disclosure>
     </div>
   );
 }

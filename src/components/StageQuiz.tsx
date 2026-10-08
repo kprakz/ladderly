@@ -33,7 +33,7 @@ export function StageQuiz({ questions, unlocked, best, onFinish }: Props) {
   if (!unlocked) {
     return (
       <p className="text-sm text-zinc-500">
-        🔒 Tick all of this stage&apos;s checkpoints to unlock a {total}-question quiz.
+        🔒 Finish the checklist to unlock a {total}-question quiz.
       </p>
     );
   }

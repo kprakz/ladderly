@@ -1,23 +1,55 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { stageTitlesSoFar } from "@/lib/generate";
 
+/** Roughly how many characters a finished path is, used to estimate progress (compact local paths are shorter). */
+const EXPECTED_CHARS = { full: 16000, compact: 9000 };
+
 /**
- * Loading state: a spinner, then the stage titles as they stream in.
+ * Loading state: which engine is writing, a progress bar estimated from how much text has arrived, the elapsed
+ * time, and the stage titles as they stream in. Local models get a note that they can take a few minutes.
  * @param {Object} props
  * @param {string} props.topic The topic being generated.
  * @param {string} props.partial The raw JSON text received so far (empty before the first chunk).
+ * @param {string} props.engine Name of the engine writing the path, e.g. "Qwen 3.5 4B (local)".
+ * @param {boolean} props.local True when a local model is writing (slower, compact output).
  * @returns {JSX.Element} The loading panel.
  */
-export function LoadingPanel({ topic, partial }: { topic: string; partial: string }) {
+export function LoadingPanel({ topic, partial, engine, local }: { topic: string; partial: string; engine: string; local: boolean }) {
   const titles = stageTitlesSoFar(partial);
+  const [seconds, setSeconds] = useState(0);
+
+  useEffect(() => {
+    const started = Date.now();
+    const timer = setInterval(() => setSeconds(Math.floor((Date.now() - started) / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const expected = local ? EXPECTED_CHARS.compact : EXPECTED_CHARS.full;
+  // Never show 100% until the path is actually done.
+  const percent = Math.min(95, Math.round((partial.length / expected) * 100));
+  const elapsed = seconds >= 60 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${seconds}s`;
 
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900" aria-live="polite">
       <div className="flex items-center gap-3">
-        <span className="h-5 w-5 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
-        <p className="font-medium">
+        <span className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+        <p className="flex-1 font-medium">
           {partial ? "Mapping your path to" : "Thinking about"} <span className="capitalize">{topic}</span>…
         </p>
+        <span className="text-sm tabular-nums text-zinc-500">{elapsed}</span>
       </div>
+      <div className="mt-3 flex items-center gap-3 pl-8">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+          <div className="h-full rounded-full bg-indigo-500 transition-all duration-500" style={{ width: `${Math.max(percent, 2)}%` }} />
+        </div>
+        <span className="text-xs tabular-nums text-zinc-500">{percent}%</span>
+      </div>
+      <p className="mt-1 pl-8 text-xs text-zinc-500">
+        Written by {engine}
+        {local && " · local models can take a few minutes on a laptop"}
+      </p>
       {titles.length > 0 && (
         <ol className="mt-4 space-y-2 pl-8">
           {titles.map((t, i) => (
