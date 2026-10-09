@@ -4,7 +4,8 @@
 // the NCERT textbooks page, the CBSE syllabus PDFs, and Khan Academy India courses linked from india.khanacademy.org.
 import type { PathExtra } from "./demoExtras";
 import type { NextTopic } from "./nextTopics";
-import type { FeaturedCourse, LearningPath, QuizQuestion } from "./schema";
+import { INDIA_STAGE_VIDEOS } from "./demoIndiaVideos";
+import type { FeaturedCourse, FeaturedVideo, LearningPath, QuizQuestion } from "./schema";
 
 /**
  * Builds a quiz question, rotating its options by an amount derived from the question text, so the correct answer
@@ -46,6 +47,16 @@ function syllabus(subject: string, file: string): FeaturedCourse {
  */
 function khan(title: string, path: string): FeaturedCourse {
   return { title, provider: "Khan Academy India", url: `https://www.khanacademy.org${path}`, kind: "free" };
+}
+
+/**
+ * Pairs each stage of a path with its verified videos, for the demo's per-stage video row.
+ * @param {LearningPath} path The path (its stages carry their own YouTube search words).
+ * @param {FeaturedVideo[][]} videos The videos for each stage, in order.
+ * @returns {PathExtra["stages"]} One extra per stage.
+ */
+function stageVideos(path: LearningPath, videos: FeaturedVideo[][]): PathExtra["stages"] {
+  return path.stages.map((stage, i) => ({ videoSearch: stage.videoSearch ?? "", videos: videos[i] ?? [] }));
 }
 
 const NOTE = "Built on the CBSE 2025–26 syllabus; check your school's latest syllabus for any changes.";
@@ -117,7 +128,7 @@ const MATHS: LearningPath = {
       ],
     },
     {
-      title: "Calculus: limits to differential equations",
+      title: "Calculus: limits (Class 11) to differential equations (Class 12)",
       duration: "6–8 weeks",
       concepts: [
         "Limits and derivatives: intuitive limits, the standard limit sin x / x → 1, and the derivative as slope and rate of change",
@@ -137,7 +148,7 @@ const MATHS: LearningPath = {
       ],
     },
     {
-      title: "Matrices, vectors, 3D, linear programming and probability",
+      title: "Matrices, vectors, 3D, linear programming and probability (Class 12)",
       duration: "5–6 weeks",
       concepts: [
         "Matrices: types, transpose, symmetric and skew-symmetric matrices, multiplication, and why AB ≠ BA in general",
@@ -168,13 +179,13 @@ const MATHS: LearningPath = {
 };
 
 const MATHS_EXTRAS: PathExtra = {
-  stages: [],
+  stages: stageVideos(MATHS, INDIA_STAGE_VIDEOS.maths),
   courses: [
     { platform: "khanacademy", query: "class 12 math india", note: "free NCERT-aligned lessons and practice" },
     { platform: "youtube", query: "class 12 maths ncert full chapter", note: "chapter-wise lectures and revision" },
   ],
   featured: {
-    videos: [],
+    videos: [INDIA_STAGE_VIDEOS.maths[0][0], INDIA_STAGE_VIDEOS.maths[3][0]],
     courses: [
       khan("Class 11 math (India)", "/math/in-in-grade-11-ncert"),
       khan("Class 12 math (India)", "/math/in-in-grade-12-ncert"),
@@ -251,7 +262,7 @@ const PHYSICS: LearningPath = {
       ],
     },
     {
-      title: "Electricity and magnetism",
+      title: "Electricity and magnetism (Class 12)",
       duration: "6–7 weeks",
       concepts: [
         "Electrostatics: Coulomb's law, electric fields and field lines, Gauss's law, potential, and capacitors in series and parallel",
@@ -270,7 +281,7 @@ const PHYSICS: LearningPath = {
       ],
     },
     {
-      title: "Optics and modern physics",
+      title: "Optics and modern physics (Class 12)",
       duration: "5–6 weeks",
       concepts: [
         "Ray optics: mirror and lens formulas, refraction, total internal reflection, prisms, microscopes and telescopes",
@@ -301,13 +312,13 @@ const PHYSICS: LearningPath = {
 };
 
 const PHYSICS_EXTRAS: PathExtra = {
-  stages: [],
+  stages: stageVideos(PHYSICS, INDIA_STAGE_VIDEOS.physics),
   courses: [
     { platform: "khanacademy", query: "class 12 physics india", note: "free lessons aligned with the NCERT chapters" },
     { platform: "youtube", query: "class 12 physics ncert full chapter", note: "chapter-wise lectures and numericals" },
   ],
   featured: {
-    videos: [],
+    videos: [INDIA_STAGE_VIDEOS.physics[0][0], INDIA_STAGE_VIDEOS.physics[3][0]],
     courses: [
       khan("Class 11 physics (India)", "/science/in-in-class11th-physics"),
       khan("Class 12 physics (India)", "/science/in-in-class-12th-physics-india"),
@@ -432,13 +443,13 @@ const CHEMISTRY: LearningPath = {
 };
 
 const CHEMISTRY_EXTRAS: PathExtra = {
-  stages: [],
+  stages: stageVideos(CHEMISTRY, INDIA_STAGE_VIDEOS.chemistry),
   courses: [
     { platform: "khanacademy", query: "class 11 chemistry india", note: "free lessons aligned with the NCERT chapters" },
     { platform: "youtube", query: "class 12 chemistry ncert full chapter", note: "chapter-wise lectures and reaction practice" },
   ],
   featured: {
-    videos: [],
+    videos: [INDIA_STAGE_VIDEOS.chemistry[0][0], INDIA_STAGE_VIDEOS.chemistry[3][0]],
     courses: [khan("Class 11 chemistry (India)", "/science/class-11-chemistry-india"), NCERT_BOOKS, syllabus("Chemistry", "Chemistry")],
   },
 };
@@ -562,13 +573,13 @@ const BIOLOGY: LearningPath = {
 };
 
 const BIOLOGY_EXTRAS: PathExtra = {
-  stages: [],
+  stages: stageVideos(BIOLOGY, INDIA_STAGE_VIDEOS.biology),
   courses: [
     { platform: "khanacademy", query: "class 12 biology india", note: "free lessons aligned with the NCERT chapters" },
     { platform: "youtube", query: "class 12 biology ncert full chapter", note: "chapter-wise lectures and diagrams" },
   ],
   featured: {
-    videos: [],
+    videos: [INDIA_STAGE_VIDEOS.biology[0][0], INDIA_STAGE_VIDEOS.biology[3][0]],
     courses: [
       khan("Class 11 biology (India)", "/science/in-in-class-11-biology-india"),
       khan("Class 12 biology (India)", "/science/in-in-class-12-biology-india"),
@@ -697,13 +708,13 @@ const COMPUTER_SCIENCE: LearningPath = {
 };
 
 const COMPUTER_SCIENCE_EXTRAS: PathExtra = {
-  stages: [],
+  stages: stageVideos(COMPUTER_SCIENCE, INDIA_STAGE_VIDEOS.computerScience),
   courses: [
     { platform: "youtube", query: "class 12 computer science python cbse", note: "chapter-wise CBSE lectures and practicals" },
     { platform: "freecodecamp", query: "python sql", note: "free practice for Python and SQL" },
   ],
   featured: {
-    videos: [],
+    videos: [INDIA_STAGE_VIDEOS.computerScience[0][0], INDIA_STAGE_VIDEOS.computerScience[3][0]],
     courses: [
       NCERT_BOOKS,
       syllabus("Computer Science", "Computer_Science"),

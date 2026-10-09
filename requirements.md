@@ -89,7 +89,7 @@ Many people want to learn a skill but never start because they don't know where 
 | FR-33 | Demo mode is on when `DEMO_MODE=true`, and **always** on when no API key is set. |
 | FR-34 | Detailed hand-written samples exist for guitar, public speaking, python and machine learning (keyword match, case-insensitive; "machine learning" wins over "python", and "ml" only matches as a whole word). Other topics get a generic template, marked as such (FR-53). |
 | FR-35 | Demo responses stream like real ones, so the loading preview behaves the same. |
-| FR-36 | A banner tells users when demo mode is on and which topics have full samples. |
+| FR-36 | A "Ready-made paths" picker under the search box lists the built-in paths by category: Students (CBSE/NCERT) → Class 11 or 12 → Maths, Physics, Chemistry, Biology or Computer Science; Programming & AI → Python or Machine learning & AI; Hobbies → Guitar; Life skills → Public speaking. "Open path" opens it instantly with the built-in content, whatever AI engine is chosen (free, and offline in the desktop app). It replaces the old demo banner. |
 
 ### 3.9 Desktop app (Windows)
 
@@ -191,6 +191,7 @@ Many people want to learn a skill but never start because they don't know where 
 | ID | Requirement |
 |---|---|
 | FR-92 | The free demo includes detailed paths for India's senior secondary curriculum (CBSE/NCERT Classes 11–12, 2025–26 syllabus): Mathematics, Physics, Chemistry, Biology and Computer Science (083). Each has 5 stages following the NCERT chapters, specific concepts, practice and checkpoints, 2–3 quiz questions per stage, subject-specific next topics, and verified links to the NCERT textbooks, the official CBSE syllabus PDF and Khan Academy India courses. Chapters removed from the rationalised syllabus are left out. Typing e.g. "class 12 physics", "chemistry", "maths", "NEET" or "class 12 computer science" selects them. |
+| FR-97 | Every stage of every hand-written demo path has 2–3 relevant videos (74 for the Class 11–12 paths, chosen from YouTube searches for each stage and checked with YouTube oEmbed to exist and allow embedding), plus free resources; each Class 11–12 path also shows two highlight videos. |
 | FR-93 | Quiz answers in these demos are spread across options A–D so the correct answer can't be guessed from its position. |
 | FR-94 | The level / hours / goal options sit behind a full-size "🎚️ Personalise: level, time and goal" button that shows how many are set, and open in a card. |
 | FR-95 | Optional web search ("🌐 Fresh info from the web" in AI settings, off by default) works with every engine, including the demo: one search per path with the user's Tavily or Brave Search key (or the server's own key, if it has one). The loading panel shows "Searching the web…" and how many sources were found. Up to 5 results (one per website, https only) are added to the prompt as reference material, and their links appear in "Videos & courses" under "Fresh from the web". |
@@ -232,7 +233,7 @@ Many people want to learn a skill but never start because they don't know where 
 | Check | Covers |
 |---|---|
 | `npx tsc --noEmit` and `npm run lint` pass | NFR-7 |
-| `npm run build` succeeds with no key, and the site shows the demo banner | FR-33, FR-36, FR-44 |
+| `npm run build` succeeds with no key, and the app shows the Ready-made paths picker; picking Students → Class 12 → Chemistry opens that path even when another engine is chosen | FR-33, FR-36, FR-44 |
 | Requests for guitar, public speaking, python and an unknown topic each stream `delta` events and end with a valid `done` event | FR-32 to FR-35 |
 | An empty topic returns HTTP 400 | FR-5 |
 | Ticking checkboxes updates the stage and overall progress, and survives a reload | FR-20 to FR-24 |

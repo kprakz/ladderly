@@ -1,3 +1,4 @@
+import type { AiSettings } from "./ai/models";
 import { getAiSettings } from "./ai/settingsStore";
 import type { LearningPath, PathRequest, StreamEvent } from "./schema";
 
@@ -7,6 +8,7 @@ import type { LearningPath, PathRequest, StreamEvent } from "./schema";
  * @param {(textSoFar: string) => void} onText Called on every chunk with all the raw JSON text received so far (for the live preview).
  * @param {AbortSignal} [signal] Optional signal to cancel the request.
  * @param {(message: string) => void} [onStatus] Called with progress notes before writing starts (e.g. "Searching the web…").
+ * @param {AiSettings} [aiOverride] Engine settings to use instead of the user's (e.g. `{ provider: "demo" }` for a ready-made path).
  * @returns {Promise<LearningPath>} The validated path. Rejects with an `Error` holding a user-friendly message on failure.
  */
 export async function generatePath(
@@ -14,12 +16,13 @@ export async function generatePath(
   onText: (textSoFar: string) => void,
   signal?: AbortSignal,
   onStatus?: (message: string) => void,
+  aiOverride?: AiSettings,
 ): Promise<LearningPath> {
   const res = await fetch("/api/path", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     // The user's AI engine choice (and their own API key, if they added one) goes with the request.
-    body: JSON.stringify({ ...request, ai: getAiSettings() }),
+    body: JSON.stringify({ ...request, ai: aiOverride ?? getAiSettings() }),
     signal,
   });
 
