@@ -6,12 +6,14 @@ import type { LearningPath, PathRequest, StreamEvent } from "./schema";
  * @param {PathRequest} request Topic plus optional level, hours per week and goal.
  * @param {(textSoFar: string) => void} onText Called on every chunk with all the raw JSON text received so far (for the live preview).
  * @param {AbortSignal} [signal] Optional signal to cancel the request.
+ * @param {(message: string) => void} [onStatus] Called with progress notes before writing starts (e.g. "Searching the web…").
  * @returns {Promise<LearningPath>} The validated path. Rejects with an `Error` holding a user-friendly message on failure.
  */
 export async function generatePath(
   request: PathRequest,
   onText: (textSoFar: string) => void,
   signal?: AbortSignal,
+  onStatus?: (message: string) => void,
 ): Promise<LearningPath> {
   const res = await fetch("/api/path", {
     method: "POST",
@@ -40,7 +42,9 @@ export async function generatePath(
     for (const line of lines) {
       if (!line.trim()) continue;
       const event = JSON.parse(line) as StreamEvent;
-      if (event.type === "delta") {
+      if (event.type === "status") {
+        onStatus?.(event.message);
+      } else if (event.type === "delta") {
         text += event.text;
         onText(text);
       } else if (event.type === "done") {

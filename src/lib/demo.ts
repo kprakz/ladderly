@@ -1,3 +1,5 @@
+import { INDIA_SAMPLES } from "./demoIndia";
+import { type NextTopic, suggestNextTopics } from "./nextTopics";
 import {
   genericExtras,
   GUITAR_EXTRAS,
@@ -269,11 +271,13 @@ const MACHINE_LEARNING: LearningPath = {
   ],
 };
 
-const SAMPLES: { keywords: string[]; path: LearningPath; extra: PathExtra }[] = [
+const SAMPLES: { keywords: string[]; path: LearningPath; extra: PathExtra; next?: NextTopic[] }[] = [
   { keywords: ["guitar"], path: GUITAR, extra: GUITAR_EXTRAS },
   { keywords: ["public speaking", "speaking", "presentation", "speech"], path: PUBLIC_SPEAKING, extra: PUBLIC_SPEAKING_EXTRAS },
-  // Machine learning comes before Python so "machine learning with Python" gets the ML path.
+  // Machine learning comes before Python (and maths) so "machine learning with Python" gets the ML path.
   { keywords: ["machine learning", " ml "], path: MACHINE_LEARNING, extra: MACHINE_LEARNING_EXTRAS },
+  // CBSE/NCERT Class 11–12 subjects; Computer Science comes before Python so "class 12 computer science python" gets it.
+  ...INDIA_SAMPLES,
   { keywords: ["python"], path: PYTHON, extra: PYTHON_EXTRAS },
 ];
 
@@ -346,7 +350,8 @@ function genericPath(topic: string): LearningPath {
 
 /**
  * Picks the demo path for a topic: a hand-written sample if a keyword matches, otherwise the generic template.
- * Either way it includes video searches, quizzes and course links (plus verified featured links for samples).
+ * Either way it includes video searches, quizzes, course links and next-topic suggestions (plus verified featured
+ * links for samples).
  * @param {string} topic The topic the user typed (matching ignores case and looks anywhere in the text; the text is
  *   padded with spaces so keywords like " ml " match whole words only).
  * @returns {LearningPath} The matching sample path, or a generic path for the topic.
@@ -354,5 +359,6 @@ function genericPath(topic: string): LearningPath {
 export function getDemoPath(topic: string): LearningPath {
   const lower = ` ${topic.toLowerCase()} `;
   const sample = SAMPLES.find((s) => s.keywords.some((k) => lower.includes(k)));
-  return sample ? withExtras(sample.path, sample.extra) : withExtras(genericPath(topic), genericExtras(topic));
+  const path = sample ? withExtras(sample.path, sample.extra) : withExtras(genericPath(topic), genericExtras(topic));
+  return { ...path, nextTopics: sample?.next ?? suggestNextTopics(topic) };
 }

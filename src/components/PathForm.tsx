@@ -7,7 +7,7 @@ const field =
   "rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-900";
 
 /**
- * Form for the topic, with the optional level, hours per week and goal tucked behind "Options" to keep it simple.
+ * Form for the topic, with the optional level, hours per week and goal behind a clear "Personalise" button.
  * @param {Object} props
  * @param {(req: PathRequest) => void} props.onSubmit Called with the cleaned-up request when the form is submitted.
  * @param {boolean} props.disabled Disables the submit button (while a path is being generated).
@@ -75,15 +75,26 @@ export function PathForm({
         type="button"
         onClick={() => setShowOptions((o) => !o)}
         aria-expanded={showOptions}
-        className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+        className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition ${
+          showOptions || optionCount > 0
+            ? "border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300"
+            : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        }`}
       >
-        Options{optionCount > 0 ? ` (${optionCount})` : ""} {showOptions ? "▴" : "▾"}
+        <span aria-hidden="true">🎚️</span>
+        Personalise: level, time and goal
+        {optionCount > 0 && (
+          <span className="rounded-full bg-indigo-600 px-2 py-0.5 text-xs text-white">{optionCount} set</span>
+        )}
+        <span aria-hidden="true" className={`transition-transform ${showOptions ? "rotate-180" : ""}`}>
+          ▾
+        </span>
       </button>
 
       {showOptions && (
-      <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 rounded-xl border border-zinc-200 bg-white p-4 sm:grid-cols-3 dark:border-zinc-800 dark:bg-zinc-900">
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-zinc-500">Current level</span>
+          <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">Current level</span>
           <select value={level} onChange={(e) => setLevel(e.target.value)} className={field}>
             <option value="">Not specified</option>
             <option value="none">None</option>
@@ -92,7 +103,7 @@ export function PathForm({
           </select>
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-zinc-500">Hours per week</span>
+          <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">Hours per week</span>
           <input
             type="number"
             min={1}
@@ -104,7 +115,7 @@ export function PathForm({
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-zinc-500">Goal</span>
+          <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">Goal</span>
           <select value={goal} onChange={(e) => setGoal(e.target.value)} className={field}>
             <option value="">Not specified</option>
             <option value="hobby">Hobby</option>

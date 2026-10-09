@@ -113,13 +113,15 @@ export function AiSettingsDialog({ open, onClose, status, onRefreshStatus }: Pro
 
         {current === "demo" && (
           <p className="rounded-lg bg-zinc-50 p-3 text-sm text-zinc-600 dark:bg-zinc-800/50 dark:text-zinc-300">
-            The free demo has detailed paths for guitar, python, public speaking and machine learning. Other topics get a
+            The free demo has detailed paths for Class 11–12 maths, physics, chemistry, biology and computer science (CBSE/NCERT), and for guitar, python, public speaking and machine learning. Other topics get a
             general template. For a detailed path on any topic, use a local model or your own API key.
           </p>
         )}
         {current === "ollama" && status?.local && <OllamaPanel status={status} onRefresh={onRefreshStatus} />}
         {current === "anthropic" && <AnthropicPanel hosted={status !== null && !status.local} />}
         {current === "openai" && <OpenAiPanel hosted={status !== null && !status.local} />}
+
+        <WebSearchPanel status={status} />
       </div>
     </dialog>
   );
@@ -506,6 +508,91 @@ function KeyPanel(props: {
         own requests{props.hosted ? ", through Ladderly's server to " + props.name + ", and is never stored or logged there" : " to " + props.name}.
       </p>
     </div>
+  );
+}
+
+const SEARCH_PROVIDERS = [
+  { id: "tavily", name: "Tavily", note: "built for AI apps, with a free monthly allowance", keyUrl: "https://app.tavily.com/", placeholder: "tvly-…" },
+  { id: "brave", name: "Brave Search", note: "independent search index, with a free plan", keyUrl: "https://brave.com/search/api/", placeholder: "Your Brave Search API key" },
+] as const;
+
+/**
+ * Optional web search: one quick search while a path is written, for up-to-date info and real links. Works with
+ * every engine. Explains the trade-offs (a little slower; the topic is sent to the search service).
+ * @param {Object} props
+ * @param {AiStatus | null} props.status Server status (whether the server has its own search key).
+ * @returns {JSX.Element} The panel.
+ */
+function WebSearchPanel({ status }: { status: AiStatus | null }) {
+  const s = useAiSettings();
+  const [show, setShow] = useState(false);
+  const on = !!s.webSearch;
+  const provider = SEARCH_PROVIDERS.find((p) => p.id === (s.searchProvider ?? "tavily")) ?? SEARCH_PROVIDERS[0];
+  const serverKey = !!status?.serverSearch;
+  return (
+    <section className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
+      <label className="flex cursor-pointer items-start gap-3">
+        <input type="checkbox" checked={on} onChange={(e) => updateAiSettings({ webSearch: e.target.checked })} className="mt-1 h-4 w-4 accent-indigo-600" />
+        <span>
+          <span className="block text-sm font-semibold">🌐 Fresh info from the web</span>
+          <span className="block text-xs text-zinc-500">
+            Search the web once while writing a path, so it reflects new versions, tools and syllabus changes, and
+            includes real links to current pages. Works with every engine.
+          </span>
+        </span>
+      </label>
+
+      {on && (
+        <div className="mt-4 space-y-4 pl-7">
+          <fieldset>
+            <legend className="text-sm font-medium">Search service</legend>
+            <div className="mt-1 space-y-1.5">
+              {SEARCH_PROVIDERS.map((p) => (
+                <label key={p.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                  <input type="radio" name="search-provider" checked={provider.id === p.id} onChange={() => updateAiSettings({ searchProvider: p.id })} className="accent-indigo-600" />
+                  <span className="font-medium">{p.name}</span>
+                  <span className="text-zinc-500">· {p.note}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <div>
+            <label htmlFor="search-key" className="text-sm font-medium">
+              {provider.name} API key {serverKey && <span className="font-normal text-zinc-500">(optional: this app has one)</span>}
+            </label>
+            <div className="mt-1 flex gap-2">
+              <input
+                id="search-key"
+                type={show ? "text" : "password"}
+                value={s.searchKey ?? ""}
+                onChange={(e) => updateAiSettings({ searchKey: e.target.value || undefined })}
+                placeholder={provider.placeholder}
+                autoComplete="off"
+                spellCheck={false}
+                className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 font-mono text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-950"
+              />
+              <button type="button" onClick={() => setShow((v) => !v)} className="rounded-lg border border-zinc-300 px-3 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
+                {show ? "Hide" : "Show"}
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-zinc-500">
+              Don&apos;t have one?{" "}
+              <a href={provider.keyUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline dark:text-indigo-400">
+                Get a {provider.name} key ↗
+              </a>
+            </p>
+            {!s.searchKey && !serverKey && <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">Add a key to use web search.</p>}
+          </div>
+
+          <ul className="space-y-1 rounded-lg bg-zinc-50 p-3 text-xs text-zinc-600 dark:bg-zinc-800/50 dark:text-zinc-300">
+            <li>⏱️ Adds a few seconds with Claude, OpenAI or the demo, and roughly 10–45 seconds with a local model (it reads the results first).</li>
+            <li>🔒 Your topic is sent to {provider.name} to search. Your key stays on this device and goes only with your own requests.</li>
+            <li>🧭 Best for fast-changing topics (frameworks, AI tools, exams). Classic skills like guitar change little.</li>
+          </ul>
+        </div>
+      )}
+    </section>
   );
 }
 

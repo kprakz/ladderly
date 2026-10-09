@@ -1,3 +1,4 @@
+import { serverSearchConfig } from "@/lib/server/webSearch";
 import type { AiStatus } from "@/lib/ai/models";
 import { isDemoMode } from "@/lib/demo";
 import { isLocalServer, ollamaStatus, systemInfo } from "@/lib/server/ollama";
@@ -11,6 +12,6 @@ import { isLocalServer, ollamaStatus, systemInfo } from "@/lib/server/ollama";
 export async function GET(): Promise<Response> {
   const local = isLocalServer();
   const [ollama, system] = local ? await Promise.all([ollamaStatus(), systemInfo()]) : [null, null];
-  const status: AiStatus = { local, serverDefault: isDemoMode() ? "demo" : "claude", ollama, system };
+  const status: AiStatus = { local, serverDefault: isDemoMode() ? "demo" : "claude", serverSearch: !!serverSearchConfig(), ollama, system };
   return Response.json(status, { headers: { "Cache-Control": "no-store" } });
 }
