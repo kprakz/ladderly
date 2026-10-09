@@ -11,8 +11,8 @@ export function DemoBannerText() {
   const { provider } = useAiSettings();
   if (provider !== "auto" && provider !== "demo") return null;
   return (
-    <div className="border-b border-zinc-200 px-4 py-2 text-center text-xs text-zinc-500 dark:border-zinc-800">
-      Free demo · full plans for guitar, python, public speaking and machine learning
+    <div className="bg-blue-600 px-4 py-2 text-center text-sm text-white dark:bg-blue-700">
+      <strong className="font-semibold">Free demo</strong> · full plans for guitar, python, public speaking and machine learning
     </div>
   );
 }
