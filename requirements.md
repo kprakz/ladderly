@@ -178,6 +178,25 @@ Many people want to learn a skill but never start because they don't know where 
 | FR-87 | Feedback is stored with its rating, message, optional email, source (website, web app or Windows app), app version, country and time. No IP address is stored. Bots are dropped by a hidden trap field; each sender is limited to 5 messages per 10 minutes; cross-site posts are refused. The desktop app forwards feedback to the public website. |
 | FR-88 | The maker reads feedback at `/admin/feedback` with a password (`FEEDBACK_ADMIN_TOKEN`): newest first, filter by source, average rating, and a "Reply" email link. The page is not linked or indexed. |
 
+### 3.16 What to learn next
+
+| ID | Requirement |
+|---|---|
+| FR-89 | Every generated path includes 3 suggested next topics (one deeper, one neighbouring, one applied), each with a one-sentence reason. Malformed suggestions are dropped rather than failing the path. |
+| FR-90 | When every checkpoint in a path is ticked, a "You've reached the top of this ladder!" card appears after the final project, showing the suggestions. "Start this path" begins a new path for that topic straight away, at "some prior exposure" level, keeping the learner's weekly hours and goal. |
+| FR-91 | Demo paths and paths saved before this feature get hand-picked suggestions for their topic family (music, AI, Python, programming, speaking, languages, art, photography, fitness, cooking, science, money, writing, games), or general next steps for other topics. |
+
+### 3.17 Class 11–12 demos, web search and personalising
+
+| ID | Requirement |
+|---|---|
+| FR-92 | The free demo includes detailed paths for India's senior secondary curriculum (CBSE/NCERT Classes 11–12, 2025–26 syllabus): Mathematics, Physics, Chemistry, Biology and Computer Science (083). Each has 5 stages following the NCERT chapters, specific concepts, practice and checkpoints, 2–3 quiz questions per stage, subject-specific next topics, and verified links to the NCERT textbooks, the official CBSE syllabus PDF and Khan Academy India courses. Chapters removed from the rationalised syllabus are left out. Typing e.g. "class 12 physics", "chemistry", "maths", "NEET" or "class 12 computer science" selects them. |
+| FR-93 | Quiz answers in these demos are spread across options A–D so the correct answer can't be guessed from its position. |
+| FR-94 | The level / hours / goal options sit behind a full-size "🎚️ Personalise: level, time and goal" button that shows how many are set, and open in a card. |
+| FR-95 | Optional web search ("🌐 Fresh info from the web" in AI settings, off by default) works with every engine, including the demo: one search per path with the user's Tavily or Brave Search key (or the server's own key, if it has one). The loading panel shows "Searching the web…" and how many sources were found. Up to 5 results (one per website, https only) are added to the prompt as reference material, and their links appear in "Videos & courses" under "Fresh from the web". |
+| FR-96 | Web search never blocks a path: a rejected key, rate limit, timeout (8 s) or outage is reported in the loading panel and the path is written without web results. Turning it on without a key gives a clear message. The settings explain the trade-offs: a few extra seconds online, roughly 10–45 seconds with a local model, and the topic is sent to the search service. |
+| NFR-10 | Web results can't steer or inject links into a path: they're marked as reference material with an instruction to ignore instructions inside them, web addresses in their text are replaced with "[link]", and `webSources` is only ever added by the server from the search results (anything the AI writes there is removed). |
+
 ## 4. Non-functional requirements
 
 | ID | Category | Requirement |

@@ -1,10 +1,12 @@
 "use client";
 
+import { suggestNextTopics } from "@/lib/nextTopics";
 import { checkKey, progressOf, type SavedPath } from "@/lib/storage";
 import { Disclosure } from "./Disclosure";
 import { LearningLinks } from "./LearningLinks";
 import { ProgressBar } from "./ProgressBar";
 import { StageCard } from "./StageCard";
+import { WhatsNext } from "./WhatsNext";
 
 /**
  * A full learning path, kept calm: title, one-line summary and progress; videos and courses folded; the stages as
@@ -13,16 +15,19 @@ import { StageCard } from "./StageCard";
  * @param {SavedPath} props.saved The saved path, including which checkpoint items are checked and quiz scores.
  * @param {(key: string) => void} props.onToggle Called with a checkpoint key when a checkbox changes.
  * @param {(stageIndex: number, correct: number, total: number) => void} props.onQuizFinish Called when a stage quiz is finished.
+ * @param {(topic: string) => void} props.onStartTopic Starts a new path for a suggested next topic (shown once the path is complete).
  * @returns {JSX.Element} The path view.
  */
 export function PathView({
   saved,
   onToggle,
   onQuizFinish,
+  onStartTopic,
 }: {
   saved: SavedPath;
   onToggle: (key: string) => void;
   onQuizFinish: (stageIndex: number, correct: number, total: number) => void;
+  onStartTopic: (topic: string) => void;
 }) {
   const { path, request } = saved;
   const checked = new Set(saved.checked);
@@ -71,6 +76,10 @@ export function PathView({
         <p className="mt-1 font-semibold">{path.finishLine.name}</p>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">{path.finishLine.description}</p>
       </section>
+
+      {progress.percent === 100 && (
+        <WhatsNext topic={request.topic} topics={path.nextTopics ?? suggestNextTopics(request.topic)} onStart={onStartTopic} />
+      )}
 
       <Disclosure title="Common mistakes to avoid" icon="⚠️" className="bg-white dark:bg-zinc-900">
         <ul className="list-disc space-y-1 pl-4 text-sm text-zinc-600 dark:text-zinc-300">

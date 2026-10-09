@@ -97,6 +97,18 @@ src/
 - **API:** `POST /api/feedback` → cross-site check → zod validation (`FeedbackInputSchema`) → trap field (a filled `website` field gets a fake success) → rate limit → save. Without a database on a local server (the desktop app), it forwards the body to `LADDERLY_SITE_URL` (default `https://ladderly.vercel.app`) with no redirects; on the public site without a database it answers 503. `GET /api/feedback` needs `Authorization: Bearer FEEDBACK_ADMIN_TOKEN` (constant-time compare, at least 12 characters) and is `no-store`.
 - **UI:** `FeedbackDialog` (native modal `<dialog>`, rendered only while open) and `FeedbackButton` (lets the server-rendered website open it). The source is "website", "app", or "desktop" when `window.ladderly` exists (with the app version). `/admin/feedback` keeps the password in `sessionStorage` for the tab only, and its layout sets `robots: noindex`.
 
+## 2.4 Next topics
+
+- `NextTopicSchema` (`{ topic, why }`) is required in `GeneratedPathSchema` (so structured output always asks for it) but optional in `LearningPathSchema` (so older paths load). `repairGeneratedPath` keeps at most 3 valid items and removes the field if none are valid.
+- `lib/nextTopics.ts` has hand-picked suggestions per topic family, chosen with the same `matchTopicTheme` keywords as the background, and a general fallback. `getDemoPath` attaches them; `PathView` uses them when a stored path has none.
+- `WhatsNext` renders when `progressOf(saved).percent === 100`; its button calls the page's `startNextTopic`, which runs `generate({ topic, level: "some", hoursPerWeek, goal })`.
+
+## 2.5 Web search and the Class 11–12 demos
+
+- **Web search** (`lib/server/webSearch.ts`): `chooseSearch` in `/api/path` picks the user's key (`searchProvider` + `searchKey` in `AiSettingsSchema`) or the server's (`TAVILY_API_KEY` / `BRAVE_SEARCH_API_KEY`, reported as `serverSearch` by `/api/ai/status`). `runSearch` sends `status` events, calls `searchWeb` (Tavily `POST /search` with a Bearer key, or Brave `GET /res/v1/web/search` with `X-Subscription-Token` and strict safe search; 8-second timeout), and `tidyResults` keeps up to 5 https results, one per host, with cleaned text. `webContext` appends them to the user prompt inside `<web_results>`, with links replaced by "[link]". After validation, `withSources` attaches `{ title, url }` from the search (not the model) as `webSources`; `repairGeneratedPath` strips any the model wrote. `generatePath` passes `status` events to the page, which shows them in `LoadingPanel`.
+- **Measured cost on a laptop** (`gemma3:1b` in Ollama): reading about 1,200 tokens of results took 10.7 s (≈113 tokens/s), against roughly 2 minutes for a whole path; larger local models read more slowly.
+- **Class 11–12 demos** (`lib/demoIndia.ts`): five hand-written paths checked against the official CBSE 2025–26 syllabus PDFs, with `INDIA_SAMPLES` placed before the Python sample in `demo.ts` so "class 12 computer science" matches first. Each sample carries its own `next` topics. The local `q()` helper rotates each question's options by a fixed amount derived from its text, spreading correct answers across A–D.
+
 ## 3. Request flow
 
 ```mermaid

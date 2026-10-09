@@ -7,6 +7,9 @@ Type any skill or topic ("guitar", "machine learning", "public speaking") and ge
 - Videos and courses: a "Videos for this week" dropdown per stage with Netflix-style hover previews, plus free and paid course links in dropdowns
 - A short quiz for each stage that unlocks when you finish it, with explanations and your best score saved
 - Tick off checkpoint items and track progress per stage and overall
+- Finish a path and get three suggestions for what to learn next, each one click away
+- Free demo paths for CBSE/NCERT Class 11–12 maths, physics, chemistry, biology and computer science
+- Optional web search (your own Tavily or Brave key) for up-to-date paths with real links
 - A calm, student-friendly layout: a personal welcome ("Welcome back, Alex"), your streak, today's goal and the one next step. A GitHub-style heatmap, ❄️ rest days and badges are one click away under "My progress"
 - Paths and progress are saved in your browser (localStorage)
 - Live streaming preview while the path is generated, and friendly errors with a retry button
@@ -196,6 +199,7 @@ src/
     site/DownloadMap.tsx  # World map of downloads by country (d3-geo + world-atlas)
     FeedbackDialog.tsx  # Feedback form (rating, message, optional email)
     FeedbackButton.tsx  # Opens the feedback form
+    WhatsNext.tsx       # "What to learn next" card when a path is finished
     UpdateBanner.tsx    # "Update available · Update now" bar in the desktop app
     ProgressBar.tsx
     ThemeToggle.tsx
@@ -215,6 +219,8 @@ src/
     badges.ts           # Milestone badges
     celebrate.ts        # Logs a step and shows celebration toasts
     dates.ts            # Local day keys and day arithmetic
+    nextTopics.ts       # Hand-picked next-topic suggestions by topic family
+    demoIndia.ts        # CBSE/NCERT Class 11-12 demo paths (maths, physics, chemistry, biology, CS)
     topicTheme.ts       # Topic keywords → background colours and symbols
 ```
 

@@ -12,7 +12,7 @@ export function DemoBannerText() {
   if (provider !== "auto" && provider !== "demo") return null;
   return (
     <div className="bg-blue-600 px-4 py-2 text-center text-sm text-white dark:bg-blue-700">
-      <strong className="font-semibold">Free demo</strong> · full plans for guitar, python, public speaking and machine learning
+      <strong className="font-semibold">Free demo</strong> · full plans for Class 11–12 maths, physics, chemistry, biology and computer science, plus guitar, python, public speaking and machine learning
     </div>
   );
 }

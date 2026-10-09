@@ -12,11 +12,12 @@ const EXPECTED_CHARS = { full: 16000, compact: 9000 };
  * @param {Object} props
  * @param {string} props.topic The topic being generated.
  * @param {string} props.partial The raw JSON text received so far (empty before the first chunk).
+ * @param {string} [props.note] A progress note from the server, e.g. "Searching the web…".
  * @param {string} props.engine Name of the engine writing the path, e.g. "Qwen 3.5 4B (local)".
  * @param {boolean} props.local True when a local model is writing (slower, compact output).
  * @returns {JSX.Element} The loading panel.
  */
-export function LoadingPanel({ topic, partial, engine, local }: { topic: string; partial: string; engine: string; local: boolean }) {
+export function LoadingPanel({ topic, partial, note, engine, local }: { topic: string; partial: string; note?: string; engine: string; local: boolean }) {
   const titles = stageTitlesSoFar(partial);
   const [seconds, setSeconds] = useState(0);
 
@@ -50,6 +51,12 @@ export function LoadingPanel({ topic, partial, engine, local }: { topic: string;
         Written by {engine}
         {local && " · local models can take a few minutes on a laptop"}
       </p>
+      {note && (
+        <p className="mt-2 pl-8 text-sm text-indigo-700 dark:text-indigo-300">
+          <span aria-hidden="true">🌐 </span>
+          {note}
+        </p>
+      )}
       {titles.length > 0 && (
         <ol className="mt-4 space-y-2 pl-8">
           {titles.map((t, i) => (

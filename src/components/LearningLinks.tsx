@@ -7,13 +7,13 @@ import { VideoRow } from "./VideoRow";
 type LinkItem = { key: string; title: string; subtitle: string; url: string; kind: CourseKind };
 
 /**
- * "Videos & courses" for a path, folded by default: a Netflix-style row of recommended videos (verified demo
- * picks), then free and paid course links. Course links are either verified course pages or searches on known
+ * "Videos & courses" for a path, folded by default: links found by web search (when it was on), a Netflix-style
+ * row of recommended videos (verified demo picks), then free and paid course links. Course links are either verified course pages or searches on known
  * platforms, so every link works. Renders nothing for older saved paths that have no links.
  * @param {Object} props
  * @param {LearningPath} props.path The learning path.
  * @param {string} props.topic The path's topic, used for the "More on YouTube" search card.
- * @returns {JSX.Element | null} The panel, or `null` when the path has no videos or courses.
+ * @returns {JSX.Element | null} The panel, or `null` when the path has no web links, videos or courses.
  */
 export function LearningLinks({ path, topic }: { path: LearningPath; topic: string }) {
   const videos = path.featured?.videos ?? [];
@@ -33,13 +33,31 @@ export function LearningLinks({ path, topic }: { path: LearningPath; topic: stri
       kind: PLATFORMS[c.platform].kind as CourseKind,
     })),
   ];
-  if (videos.length === 0 && items.length === 0) return null;
+  const web = path.webSources ?? [];
+  if (videos.length === 0 && items.length === 0 && web.length === 0) return null;
 
   const free = items.filter((i) => i.kind !== "paid");
   const paid = items.filter((i) => i.kind === "paid");
 
   return (
-    <Disclosure title="Videos & courses" icon="🎓" count={videos.length + items.length} className="bg-white dark:bg-zinc-900">
+    <Disclosure title="Videos & courses" icon="🎓" count={videos.length + items.length + web.length} className="bg-white dark:bg-zinc-900">
+      {web.length > 0 && (
+        <>
+          <h4 className="text-sm font-medium text-zinc-500">
+            <span aria-hidden="true">🌐 </span>Fresh from the web
+          </h4>
+          <ul className="mb-4 mt-2 space-y-2">
+            {web.map((w) => (
+              <li key={w.url}>
+                <a href={w.url} target="_blank" rel="noopener noreferrer" className="block rounded-md p-2 -m-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                  <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">{w.title} ↗</span>
+                  <span className="block text-xs text-zinc-500">{new URL(w.url).hostname.replace(/^www\./, "")}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
       {videos.length > 0 && <VideoRow videos={videos} searchQuery={`${topic} for beginners`} />}
       {free.length > 0 && (
         <>

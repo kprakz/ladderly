@@ -91,6 +91,11 @@ export const AiSettingsSchema = z.object({
   anthropicModel: z.enum(ANTHROPIC_MODELS.map((m) => m.id) as [AnthropicModelId, ...AnthropicModelId[]]).optional(),
   openaiKey: z.string().trim().max(300).optional(),
   openaiModel: z.enum(OPENAI_MODELS.map((m) => m.id) as [OpenAiModelId, ...OpenAiModelId[]]).optional(),
+  /** Search the web once while writing a path, for up-to-date info and real links. Off by default. */
+  webSearch: z.boolean().optional(),
+  searchProvider: z.enum(["tavily", "brave"]).optional(),
+  /** The user's own search API key (kept on their device, sent only with their requests). */
+  searchKey: z.string().trim().max(300).optional(),
 });
 export type AiSettings = z.infer<typeof AiSettingsSchema>;
 
@@ -100,6 +105,8 @@ export type AiStatus = {
   local: boolean;
   /** What "Default" means on this server: the free demo, or Claude with the server's own key. */
   serverDefault: "demo" | "claude";
+  /** True when this server has its own web-search key, so users don't need one. */
+  serverSearch: boolean;
   ollama: { reachable: boolean; version?: string; models: { name: string; sizeGB: number }[] } | null;
   system: { freeDiskGB: number; totalRamGB: number } | null;
 };

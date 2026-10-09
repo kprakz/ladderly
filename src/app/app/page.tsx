@@ -31,7 +31,7 @@ import { checkKey, updatePaths, useSavedPaths, type SavedPath } from "@/lib/stor
 import { computeStreak } from "@/lib/streaks";
 import { DEFAULT_THEME, matchTopicTheme } from "@/lib/topicTheme";
 
-type Status = { kind: "idle" } | { kind: "loading"; partial: string } | { kind: "error"; message: string };
+type Status = { kind: "idle" } | { kind: "loading"; partial: string; note?: string } | { kind: "error"; message: string };
 
 /**
  * The app's only page: greeting and progress dashboard, form, loading/error states, the active path and the
@@ -78,10 +78,15 @@ export default function Home() {
     setLastRequest(request);
     setStatus({ kind: "loading", partial: "" });
     try {
+      let note: string | undefined;
       const path = await generatePath(
         request,
-        (partial) => setStatus({ kind: "loading", partial }),
+        (partial) => setStatus({ kind: "loading", partial, note }),
         controller.signal,
+        (message) => {
+          note = message;
+          setStatus({ kind: "loading", partial: "", note });
+        },
       );
       const saved: SavedPath = { id: crypto.randomUUID(), createdAt: Date.now(), request, path, checked: [] };
       climb(1, () => updatePaths((prev) => [saved, ...prev]));
@@ -158,6 +163,18 @@ export default function Home() {
   }
 
   /**
+   * Starts a path for a suggested next topic. The learner has just finished a related path, so it assumes some
+   * prior exposure and keeps their weekly time and goal. Scrolls up to show the progress.
+   * @param {string} topic The suggested topic.
+   * @returns {void}
+   */
+  function startNextTopic(topic: string) {
+    if (!active) return;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    void generate({ topic, level: "some", hoursPerWeek: active.request.hoursPerWeek, goal: active.request.goal });
+  }
+
+  /**
    * Removes a saved path. (Its past activity stays in the heatmap.)
    * @param {string} id The saved path's ID.
    * @returns {void}
@@ -225,16 +242,22 @@ export default function Home() {
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_260px]">
         <main className="min-w-0 space-y-6">
-          {status.kind === "loading" && lastRequest && <LoadingPanel topic={lastRequest.topic} partial={status.partial} engine={engine} local={aiSettings.provider === "ollama"} />}
+          {status.kind === "loading" && lastRequest && <LoadingPanel topic={lastRequest.topic} partial={status.partial} note={status.note} engine={engine} local={aiSettings.provider === "ollama"} />}
           {status.kind === "error" && lastRequest && (
             <ErrorPanel message={status.message} onRetry={() => generate(lastRequest)} />
           )}
           {status.kind !== "loading" && active && (
-            <PathView key={active.id} saved={active} onToggle={(key) => toggleCheck(active.id, key)} onQuizFinish={saveQuizScore} />
+            <PathView
+              key={active.id}
+              saved={active}
+              onToggle={(key) => toggleCheck(active.id, key)}
+              onQuizFinish={saveQuizScore}
+              onStartTopic={startNextTopic}
+            />
           )}
           {status.kind === "idle" && !active && loaded && (
             <p className="py-10 text-center text-zinc-500">
-              Type something you want to learn, like <em>guitar</em> or <em>python</em>, and get a step-by-step plan.
+              Type something you want to learn, like <em>class 12 physics</em>, <em>guitar</em> or <em>python</em>, and get a step-by-step plan.
             </p>
           )}
         </main>

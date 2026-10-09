@@ -37,7 +37,7 @@ const FEATURES = [
 ];
 
 const ENGINES = [
-  { name: "Free demo", cost: "Free", text: "Detailed paths for guitar, Python, public speaking and machine learning, and a general plan for anything else." },
+  { name: "Free demo", cost: "Free", text: "Detailed paths for Class 11–12 maths, physics, chemistry, biology and computer science (CBSE/NCERT), plus guitar, Python, public speaking and machine learning, and a general plan for anything else." },
   { name: "Local model (Ollama)", cost: "Free", text: "Any topic, generated on your own computer, so it stays private. Ladderly recommends a model that fits your storage and memory. Desktop app only." },
   { name: "Claude", cost: "Your Anthropic key", text: "The most detailed paths. You pay Anthropic directly for what you use; the key stays on your device." },
   { name: "OpenAI GPT", cost: "Your OpenAI key", text: "Detailed paths with GPT models. You pay OpenAI directly for what you use; the key stays on your device." },

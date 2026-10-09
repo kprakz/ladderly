@@ -26,6 +26,12 @@ export const CourseLinkSchema = z.object({
   note: z.string().describe("Half a sentence on what to look for there"),
 });
 
+/** A skill to learn after finishing this path. */
+export const NextTopicSchema = z.object({
+  topic: z.string().min(2).max(60).describe("A short skill name someone could type to start a new path, e.g. 'Music theory'"),
+  why: z.string().min(5).max(200).describe("One sentence on why it's a good next step after this path"),
+});
+
 /** Fields every stage has, in all versions of the data. */
 const StageCore = z.object({
   title: z.string().describe("Short stage name"),
@@ -76,23 +82,29 @@ export const GeneratedPathSchema = PathCore.extend({
     .min(1)
     .max(6)
     .describe("2-3 free platforms and 1-3 paid platforms that suit this skill"),
+  nextTopics: z
+    .array(NextTopicSchema)
+    .min(2)
+    .max(4)
+    .describe("3 skills to learn after finishing this path: deeper, neighbouring or applied skills that build on it"),
 });
 
 /**
  * Cleans up an AI-generated path before validation, so small mistakes don't fail the whole path:
- * - removes anything only hand-verified data may contain (`featured` links, per-stage `videos`, `isTemplate`),
- *   so a model can never inject URLs;
+ * - removes anything only hand-verified or server-added data may contain (`featured` links, per-stage `videos`,
+ *   `isTemplate`, `webSources`), so a model can never inject URLs;
  * - trims lists that are longer than allowed (e.g. 7 concepts → 6);
- * - drops malformed quiz questions and courses on unknown platforms.
+ * - drops malformed quiz questions, courses on unknown platforms and malformed next topics.
  * Lists that are too short are left as they are, so validation still rejects them.
  * @param {unknown} raw Parsed JSON from the model.
  * @returns {unknown} The cleaned value (or `raw` unchanged if it isn't an object).
  */
 export function repairGeneratedPath(raw: unknown): unknown {
   if (!raw || typeof raw !== "object") return raw;
-  const { featured: _f, isTemplate: _t, ...rest } = raw as Record<string, unknown>;
+  const { featured: _f, isTemplate: _t, webSources: _w, ...rest } = raw as Record<string, unknown>;
   void _f;
   void _t;
+  void _w;
   const path = dropUnknownPlatforms(rest) as Record<string, unknown>;
   /**
    * Shortens a list to at most `max` items (leaves non-lists alone).
@@ -121,6 +133,13 @@ export function repairGeneratedPath(raw: unknown): unknown {
   }
   path.pitfalls = trim(path.pitfalls, 3);
   path.courses = trim(path.courses, 6);
+  // Next topics are optional when stored, so drop bad ones instead of failing the whole path.
+  if (Array.isArray(path.nextTopics)) {
+    path.nextTopics = path.nextTopics.filter((t) => NextTopicSchema.safeParse(t).success).slice(0, 3);
+    if ((path.nextTopics as unknown[]).length === 0) delete path.nextTopics;
+  } else {
+    delete path.nextTopics;
+  }
   return path;
 }
 
@@ -171,6 +190,13 @@ export const LearningPathSchema = PathCore.extend({
     .min(4)
     .max(6),
   courses: z.array(CourseLinkSchema).optional(),
+  /** Real pages found by web search when the path was made (added by the server, never by the AI). */
+  webSources: z
+    .array(z.object({ title: z.string().max(200), url: z.url({ protocol: /^https$/ }) }))
+    .max(6)
+    .optional(),
+  /** What to learn after this path (AI-written; older paths fall back to `suggestNextTopics`). */
+  nextTopics: z.array(NextTopicSchema).optional(),
   featured: z
     .object({ videos: z.array(FeaturedVideoSchema), courses: z.array(FeaturedCourseSchema) })
     .optional(),
@@ -180,6 +206,7 @@ export const LearningPathSchema = PathCore.extend({
 
 export type QuizQuestion = z.infer<typeof QuizQuestionSchema>;
 export type CourseLink = z.infer<typeof CourseLinkSchema>;
+export type NextTopicItem = z.infer<typeof NextTopicSchema>;
 export type FeaturedVideo = z.infer<typeof FeaturedVideoSchema>;
 export type FeaturedCourse = z.infer<typeof FeaturedCourseSchema>;
 export type LearningPath = z.infer<typeof LearningPathSchema>;
@@ -187,6 +214,7 @@ export type Stage = LearningPath["stages"][number];
 
 /** Newline-delimited JSON events streamed from /api/path. */
 export type StreamEvent =
+  | { type: "status"; message: string }
   | { type: "delta"; text: string }
   | { type: "done"; path: LearningPath }
   | { type: "error"; message: string };

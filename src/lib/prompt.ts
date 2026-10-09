@@ -26,6 +26,7 @@ Guidelines:
 - For each stage, write a YouTube search ("videoSearch") that would find good lessons for exactly that stage.
 - For each stage, write 2-3 multiple-choice quiz questions (4 options, one correct) about that stage's own concepts: definitions, choosing the right technique, predicting what happens, reading a small example. Make wrong options plausible. Add a one-sentence explanation. Vary which option is correct. Never ask about study habits or motivation.
 - For "courses", pick 2-3 free and 1-3 paid platforms that genuinely suit this skill, with search words for each. Use only these platform IDs: youtube, khanacademy, freecodecamp, mitocw (free); coursera (free to audit); udemy, skillshare, linkedin, domestika (paid). Skip platforms that don't cover the skill (e.g. freecodecamp is for programming, domestika for creative skills).
+- For "nextTopics", suggest 3 skills to learn after finishing this path. Each must build directly on this same skill: one goes deeper into it, one is a closely neighbouring skill, one applies it to real work. Use short names someone could type to start a new path, each with a one-sentence reason. Never suggest unrelated subjects.
 - If the topic is not a learnable skill, still do your best to interpret it as one.`;
 
 /**
@@ -38,13 +39,13 @@ export function buildUserPrompt(req: PathRequest): string {
   if (req.level) lines.push(`Learner: ${LEVELS[req.level]}`);
   if (req.hoursPerWeek) lines.push(`Time available: about ${req.hoursPerWeek} hours per week`);
   if (req.goal) lines.push(`Goal: ${GOALS[req.goal]}`);
-  lines.push("", "Create the learning path.");
+  lines.push("", `Create the learning path. The 3 next topics must build directly on ${req.topic}.`);
   return lines.join("\n");
 }
 
 /** Extra instruction for slower local models, so a path finishes in reasonable time on a laptop. */
 const COMPACT_NOTE = `
-- Keep it compact so it generates quickly: exactly 4 stages, 3-4 concepts and 2 checkpoints per stage, 1 practice task per stage, exactly 2 quiz questions per stage, and 3 courses. Stay just as specific.`;
+- Keep it compact so it generates quickly: exactly 4 stages, 3-4 concepts and 2 checkpoints per stage, 1 practice task per stage, exactly 2 quiz questions per stage, 3 courses and 3 next topics. Stay just as specific.`;
 
 /**
  * The system prompt for a given engine.
