@@ -14,6 +14,8 @@ Type any skill or topic ("guitar", "machine learning", "public speaking") and ge
 - Choose your AI engine: the free demo, a **free local open-source model** (Ollama, recommended for your computer), or **your own Claude or OpenAI key**
 - Runs as a website or as an installable **Windows desktop app**
 
+**Live:** [ladderly.vercel.app](https://ladderly.vercel.app) (website) · [ladderly.vercel.app/app](https://ladderly.vercel.app/app) (the app in your browser).
+
 The hosted site has two parts: the **website** at `/` (what Ladderly is, download button, a world map of downloads) and the **app** at `/app`.
 
 Documentation: [requirements.md](requirements.md) (what it must do) · [design.md](design.md) (how it's built).
@@ -112,6 +114,22 @@ The website's **Download for Windows** button goes to `/api/download`, which cou
 
 Only a two-letter country code (from Vercel's `x-vercel-ip-country` header) and a count are stored: no IP addresses or personal data. Each browser is counted once (a `ladderly_dl` cookie), and crawlers are skipped.
 
+## Releasing updates (desktop app)
+
+Installed apps check GitHub Releases when they start and every 6 hours (or via **Help → Check for Updates**). When a newer version is out they show *"Ladderly X is available · Update now"*. One click downloads the installer (with progress), checks its SHA-512 against `latest.yml`, installs it silently and reopens Ladderly.
+
+To ship an update:
+
+1. Bump `"version"` in `package.json` (e.g. `0.1.0` → `0.1.1`).
+2. Make sure the [GitHub CLI](https://cli.github.com) is installed and signed in (`gh auth login`).
+3. Run `npm run desktop:release`. It builds the app and publishes a GitHub release `v0.1.1` with `Ladderly-Setup.exe`, its `.blockmap` and `latest.yml`. The website's download button and every installed app pick it up automatically.
+
+## Feedback
+
+A 💬 **Feedback** button in the app and on the website opens a short form (emoji rating, message, optional email for a reply). Messages are stored in the same Upstash database as the download counts; the desktop app sends its feedback to the website. Limits: 5 messages per sender per 10 minutes (the IP is only used as a short-lived, hashed rate-limit key, never stored), and a hidden trap field quietly drops bots.
+
+To read feedback, set `FEEDBACK_ADMIN_TOKEN` in Vercel (a long random password, at least 12 characters), redeploy, and open **`/admin/feedback`** on your site. The page isn't linked anywhere and isn't indexed by search engines.
+
 ## How it works
 
 1. The form posts `{ topic, level?, hoursPerWeek?, goal? }` to `POST /api/path`, which is validated with zod.
@@ -129,9 +147,13 @@ electron/
   main.js               # Desktop app: window, menu, startup and shutdown
   server.js             # Starts the bundled Next.js server and waits until it's ready
   config.js             # Reads the desktop settings file (API key, demo mode)
+  updater.js            # Checks for, downloads and installs updates
+  update-core.js        # Update checks, downloads and checksum verification (no Electron, testable)
+  preload.js            # The small window.ladderly bridge (version and updates)
 scripts/
   build-desktop.mjs     # Builds the standalone server for the desktop app
   after-pack.cjs        # Copies the server into the packaged app
+  release.mjs           # Publishes a GitHub release (npm run desktop:release)
 build/icon.svg          # Logo source (white ladder rising toward a yellow star, dark grey tile)
 build/icon.png          # App icon rendered from icon.svg (installer and .exe icons come from this)
 src/
@@ -145,6 +167,8 @@ src/
     app/layout.tsx      # Adds the demo banner to the app
     api/download/       # Counts a download by country, then redirects to the installer
     api/downloads/      # Download totals per country, for the map
+    api/feedback/       # Saves feedback (POST); lists it for the admin (GET)
+    admin/feedback/     # Private feedback inbox (password: FEEDBACK_ADMIN_TOKEN)
     globals.css         # Tailwind + class-based dark mode
   components/
     PathForm.tsx        # Topic input and optional level / hours / goal
@@ -170,6 +194,9 @@ src/
     AuthorNote.tsx      # Maker's quote with LinkedIn and GitHub links
     ShootingStars.tsx   # Shooting stars from the logo when the cursor is on it
     site/DownloadMap.tsx  # World map of downloads by country (d3-geo + world-atlas)
+    FeedbackDialog.tsx  # Feedback form (rating, message, optional email)
+    FeedbackButton.tsx  # Opens the feedback form
+    UpdateBanner.tsx    # "Update available · Update now" bar in the desktop app
     ProgressBar.tsx
     ThemeToggle.tsx
   lib/

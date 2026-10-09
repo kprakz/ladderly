@@ -9,7 +9,8 @@
     "lint": "eslint",
     "desktop:dev": "node scripts/build-desktop.mjs && electron .",
     "desktop:start": "electron .",
-    "desktop:build": "node scripts/build-desktop.mjs && electron-builder --win"
+    "desktop:build": "node scripts/build-desktop.mjs && electron-builder --win --publish never",
+    "desktop:release": "npm run desktop:build && node scripts/release.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
@@ -72,6 +73,13 @@
       "shortcutName": "Ladderly",
       "artifactName": "Ladderly-Setup.${ext}"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "kprakz",
+        "repo": "ladderly"
+      }
+    ],
     "afterPack": "scripts/after-pack.cjs"
   }
 }

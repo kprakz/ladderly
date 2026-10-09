@@ -84,6 +84,19 @@ src/
 - **Storage:** `lib/server/downloadStats.ts` talks to Upstash Redis over its REST `/pipeline` endpoint with `fetch` (no extra dependency): `HINCRBY ladderly:downloads:countries <CC> 1` and `INCR ladderly:downloads:total`. It reads `KV_REST_API_URL`/`KV_REST_API_TOKEN` (Vercel's Upstash integration) or `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`. Without them, counting is a no-op and stats report `enabled: false`; errors are logged without details and never block the redirect.
 - **Map:** `GET /api/downloads` returns `{ enabled, total, countries }` with `s-maxage=60`. `components/site/DownloadMap.tsx` projects Natural Earth 110m country shapes (`world-atlas`, bundled) with `d3-geo`'s Natural Earth projection, maps ISO alpha-2 codes to the shapes' numeric ids with `i18n-iso-countries`, and shades countries on a log scale (5 levels). Country names come from `Intl.DisplayNames`. Ranks are numbers rather than flag emoji, because Windows doesn't draw flag emoji.
 
+## 2.2 Desktop updates
+
+- **Files:** `electron/update-core.js` (no Electron imports; unit-tested) parses electron-builder's `latest.yml`, compares versions, and downloads the installer with `fetch` (following GitHub's redirects), hashing it as it streams and deleting it if the SHA-512 doesn't match. `electron/updater.js` holds the state machine (`idle → checking → available → downloading → installing`, or `error`), broadcasts it to windows on `updates:state`, and answers `updates:get/check/install` IPC calls only from the local server's origin.
+- **Bridge:** `electron/preload.js` exposes a fixed `window.ladderly = { desktop, updates }` through `contextBridge` (the window stays sandboxed with context isolation). `src/lib/desktop.ts` types it; `UpdateBanner` subscribes and renders the bar.
+- **Install:** the verified installer is saved to the temp folder and started detached with `/S --updated --force-run` (electron-builder's NSIS: silent install, then relaunch); the app quits 0.8 s later so files can be replaced.
+- **Release feed:** `https://github.com/kprakz/ladderly/releases/latest/download/` (`latest.yml` and `Ladderly-Setup.exe`). `package.json` has a GitHub `publish` entry so electron-builder writes `latest.yml`; builds use `--publish never` and `scripts/release.mjs` uploads with `gh`. Unpackaged builds only check when `LADDERLY_UPDATE_FEED` points at a test feed.
+
+## 2.3 Feedback
+
+- **Storage:** `lib/server/redis.ts` (shared REST pipeline helper) and `lib/server/feedback.ts`: entries are JSON in a Redis list `ladderly:feedback` (`LPUSH` + `LTRIM` to 5,000). Rate limiting uses `INCR` + `EXPIRE … NX` on `ladderly:feedback:rl:<HMAC(ip)>` (16 hex characters, 10-minute expiry), so the IP itself is never written.
+- **API:** `POST /api/feedback` → cross-site check → zod validation (`FeedbackInputSchema`) → trap field (a filled `website` field gets a fake success) → rate limit → save. Without a database on a local server (the desktop app), it forwards the body to `LADDERLY_SITE_URL` (default `https://ladderly.vercel.app`) with no redirects; on the public site without a database it answers 503. `GET /api/feedback` needs `Authorization: Bearer FEEDBACK_ADMIN_TOKEN` (constant-time compare, at least 12 characters) and is `no-store`.
+- **UI:** `FeedbackDialog` (native modal `<dialog>`, rendered only while open) and `FeedbackButton` (lets the server-rendered website open it). The source is "website", "app", or "desktop" when `window.ladderly` exists (with the app version). `/admin/feedback` keeps the password in `sessionStorage` for the tab only, and its layout sets `robots: noindex`.
+
 ## 3. Request flow
 
 ```mermaid
