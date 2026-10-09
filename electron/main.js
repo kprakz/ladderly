@@ -3,6 +3,7 @@ const path = require("node:path");
 const { app, BrowserWindow, Menu, dialog, nativeTheme, shell } = require("electron");
 const { configPath, configToEnv, ensureConfigFile, loadConfig } = require("./config");
 const { choosePort, startServer } = require("./server");
+const { checkNow, initUpdater } = require("./updater");
 
 /** Fixed local port, so localStorage (saved paths) keeps the same origin between launches. */
 const PREFERRED_PORT = 47821;
@@ -43,7 +44,7 @@ function createWindow(url) {
     backgroundColor: nativeTheme.shouldUseDarkColors ? "#09090b" : "#fafafa",
     autoHideMenuBar: true,
     show: false,
-    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, preload: path.join(__dirname, "preload.js") },
   });
 
   win.webContents.setWindowOpenHandler(({ url: target }) => {
@@ -106,6 +107,7 @@ function buildMenu() {
     {
       label: "Help",
       submenu: [
+        { label: "Check for Updates…", click: () => void checkNow({ interactive: true }) },
         { label: "Project on GitHub", click: () => shell.openExternal("https://github.com/kprakz/ladderly") },
         {
           label: "About Ladderly",
@@ -143,6 +145,7 @@ async function start() {
       }
     });
     mainWindow = createWindow(server.url);
+    initUpdater(server.url);
   } catch (err) {
     dialog.showErrorBox("Ladderly could not start", err instanceof Error ? err.message : String(err));
     app.quit();

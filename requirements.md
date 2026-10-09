@@ -167,6 +167,17 @@ Many people want to learn a skill but never start because they don't know where 
 | FR-81 | Each download is counted by country, once per browser (cookie), skipping known crawlers. Only a two-letter country code and a number are stored, never IP addresses or personal data. A stats problem never blocks a download. |
 | FR-82 | "Climbers around the world" shows a world map with countries shaded by downloads, the total downloads, the number of countries and the top 9 countries. Hovering a country shows its count. Before counting is set up it says counts will appear soon; with no downloads yet it invites the visitor to be first. |
 
+### 3.15 Updates and feedback
+
+| ID | Requirement |
+|---|---|
+| FR-83 | The desktop app checks for a newer version on GitHub Releases 10 seconds after starting and every 6 hours, and from **Help → Check for Updates** (which also says "You're up to date"). Nothing is shown when up to date or offline. |
+| FR-84 | When a newer version exists, a bar at the top of the app says "Ladderly X is available" with "What's new" (the release notes), "Later" and **Update now**. One click downloads the installer with a progress bar, verifies its SHA-512 against the release's `latest.yml`, installs it silently and reopens Ladderly. A failed or tampered download is deleted and offers "Try again". |
+| FR-85 | Releasing an update is one command (`npm run desktop:release`) after bumping the version: it builds and publishes the GitHub release with the installer and `latest.yml`. |
+| FR-86 | A 💬 Feedback button in the app's header and on the website (nav and a "Help shape Ladderly" section) opens a form: optional emoji rating (1–5), a message (3–2,000 characters) and an optional email for a reply. It confirms with "Thank you!" and shows friendly errors. |
+| FR-87 | Feedback is stored with its rating, message, optional email, source (website, web app or Windows app), app version, country and time. No IP address is stored. Bots are dropped by a hidden trap field; each sender is limited to 5 messages per 10 minutes; cross-site posts are refused. The desktop app forwards feedback to the public website. |
+| FR-88 | The maker reads feedback at `/admin/feedback` with a password (`FEEDBACK_ADMIN_TOKEN`): newest first, filter by source, average rating, and a "Reply" email link. The page is not linked or indexed. |
+
 ## 4. Non-functional requirements
 
 | ID | Category | Requirement |

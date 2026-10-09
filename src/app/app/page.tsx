@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { AiSettingsDialog } from "@/components/AiSettingsDialog";
 import { AuthorNote } from "@/components/AuthorNote";
+import { FeedbackButton } from "@/components/FeedbackButton";
 import { History } from "@/components/History";
 import { Logo } from "@/components/Logo";
 import { NameDialog } from "@/components/NameDialog";
@@ -15,6 +16,7 @@ import { ShootingStars } from "@/components/ShootingStars";
 import { ErrorPanel, LoadingPanel } from "@/components/StatusPanels";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TopicBackground } from "@/components/TopicBackground";
+import { UpdateBanner } from "@/components/UpdateBanner";
 import { Toaster } from "@/components/Toaster";
 import { useActivity } from "@/lib/activity";
 import { engineLabel } from "@/lib/ai/models";
@@ -169,8 +171,18 @@ export default function Home() {
       <TopicBackground theme={backgroundTheme} />
       <CursorGlow color={backgroundTheme.glows[0]} />
       <ShootingStars anchorId="ladderly-logo" />
+      <UpdateBanner />
       <header className="relative mb-8">
         <div className="absolute right-0 top-0 flex items-center gap-1">
+          <FeedbackButton
+            source="app"
+            title="Share your feedback"
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
+          >
+            <span aria-hidden="true">💬</span>
+            <span className="hidden sm:inline">Feedback</span>
+            <span className="sr-only sm:hidden">Feedback</span>
+          </FeedbackButton>
           <button
             onClick={() => setAiOpen(true)}
             title={`AI: ${engine}`}

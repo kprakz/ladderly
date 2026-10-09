@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthorNote } from "@/components/AuthorNote";
 import { CursorGlow } from "@/components/CursorGlow";
+import { FeedbackButton } from "@/components/FeedbackButton";
 import { Logo } from "@/components/Logo";
 import { ShootingStars } from "@/components/ShootingStars";
 import { DownloadMap } from "@/components/site/DownloadMap";
@@ -79,6 +80,9 @@ export default function Home() {
           <a href="#download" className="rounded-lg px-3 py-1.5 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900">
             Download
           </a>
+          <FeedbackButton source="website" className="hidden rounded-lg px-3 py-1.5 text-zinc-600 hover:bg-zinc-100 sm:inline dark:text-zinc-300 dark:hover:bg-zinc-900">
+            Feedback
+          </FeedbackButton>
           <ThemeToggle />
         </div>
       </nav>
@@ -189,6 +193,23 @@ export default function Home() {
             ))}
           </div>
         </Section>
+
+        {/* Feedback */}
+        <section id="feedback" className="mx-auto max-w-2xl px-4 pb-20 pt-4 text-center sm:px-6">
+          <div className="rounded-2xl border border-zinc-200 bg-white p-8 dark:border-zinc-800 dark:bg-zinc-900">
+            <p aria-hidden="true" className="text-3xl">
+              💬
+            </p>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight">Help shape Ladderly</h2>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+              Tried it? Stuck somewhere? Have an idea? I read every message, and your feedback decides what gets built
+              next.
+            </p>
+            <FeedbackButton source="website" className="mt-5 rounded-xl bg-indigo-600 px-6 py-3 font-medium text-white shadow-sm transition hover:bg-indigo-500">
+              Share your feedback
+            </FeedbackButton>
+          </div>
+        </section>
       </main>
 
       <footer className="border-t border-zinc-200 py-8 text-center text-sm text-zinc-500 dark:border-zinc-800">
