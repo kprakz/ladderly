@@ -123,6 +123,35 @@
   }
 }
 
+/* Download map: coloured squares pop in and spread outward from each country's centre once the map is in view. */
+.map-spread {
+  opacity: 0;
+}
+.map-started .map-spread {
+  animation: mapSpread 0.55s ease-out forwards;
+}
+@keyframes mapSpread {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-spread,
+  .map-started .map-spread {
+    opacity: 1;
+    animation: none;
+  }
+}
+
 html {
   color-scheme: light;
 }
