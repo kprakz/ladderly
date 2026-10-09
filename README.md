@@ -167,7 +167,7 @@ src/
     apple-icon.png      # Home-screen icon for iPhone/iPad
     page.tsx            # The website: features, AI options, download, world map, FAQ
     app/page.tsx        # The learning app (/app): form, loading/error states, path view, history
-    app/layout.tsx      # Adds the demo banner to the app
+    app/layout.tsx      # The app's page title
     api/download/       # Counts a download by country, then redirects to the installer
     api/downloads/      # Download totals per country, for the map
     api/feedback/       # Saves feedback (POST); lists it for the admin (GET)
@@ -184,8 +184,7 @@ src/
     Disclosure.tsx      # Accessible animated dropdown
     StageQuiz.tsx       # Per-stage multiple-choice quiz
     AiSettingsDialog.tsx  # AI engine settings: demo, local models (Ollama), Claude, OpenAI
-    DemoBannerText.tsx  # Demo banner text (hidden when another engine is chosen)
-    DemoBanner.tsx      # "Demo version" banner, rendered per request
+    ReadyPaths.tsx      # "Ready-made paths" picker: category → grade → topic
     Logo.tsx            # The Ladderly logo as an inline SVG
     History.tsx         # Saved paths list
     ProgressDashboard.tsx  # Greeting, streak and goal chips, next step, "My progress" panel
@@ -221,6 +220,8 @@ src/
     dates.ts            # Local day keys and day arithmetic
     nextTopics.ts       # Hand-picked next-topic suggestions by topic family
     demoIndia.ts        # CBSE/NCERT Class 11-12 demo paths (maths, physics, chemistry, biology, CS)
+    demoIndiaVideos.ts  # Verified per-stage videos for the Class 11-12 paths
+    readyPaths.ts       # The ready-made path catalogue for the picker
     topicTheme.ts       # Topic keywords → background colours and symbols
 ```
 

@@ -9,6 +9,7 @@ import { Logo } from "@/components/Logo";
 import { NameDialog } from "@/components/NameDialog";
 import { PathForm } from "@/components/PathForm";
 import { PathView } from "@/components/PathView";
+import { ReadyPaths } from "@/components/ReadyPaths";
 import { findNextStep, type NextStep, ProgressDashboard } from "@/components/ProgressDashboard";
 import { OPEN_STAGE_EVENT } from "@/components/StageCard";
 import { CursorGlow } from "@/components/CursorGlow";
@@ -31,7 +32,7 @@ import { checkKey, updatePaths, useSavedPaths, type SavedPath } from "@/lib/stor
 import { computeStreak } from "@/lib/streaks";
 import { DEFAULT_THEME, matchTopicTheme } from "@/lib/topicTheme";
 
-type Status = { kind: "idle" } | { kind: "loading"; partial: string; note?: string } | { kind: "error"; message: string };
+type Status = { kind: "idle" } | { kind: "loading"; partial: string; note?: string; ready?: boolean } | { kind: "error"; message: string };
 
 /**
  * The app's only page: greeting and progress dashboard, form, loading/error states, the active path and the
@@ -45,6 +46,7 @@ export default function Home() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [lastRequest, setLastRequest] = useState<PathRequest | null>(null);
+  const [lastReady, setLastReady] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
   const aiSettings = useAiSettings();
@@ -68,25 +70,28 @@ export default function Home() {
    * Generates a path, showing the loading preview; on success saves and shows it (a rung climbed), on failure
    * shows the error. Cancels any generation already in progress.
    * @param {PathRequest} request Topic and options from the form (or the last request, on Retry).
+   * @param {boolean} [ready] True for a ready-made path: uses the built-in paths (instant, offline), whatever the engine.
    * @returns {Promise<void>}
    */
-  async function generate(request: PathRequest) {
+  async function generate(request: PathRequest, ready = false) {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
     setLastRequest(request);
-    setStatus({ kind: "loading", partial: "" });
+    setLastReady(ready);
+    setStatus({ kind: "loading", partial: "", ready });
     try {
       let note: string | undefined;
       const path = await generatePath(
         request,
-        (partial) => setStatus({ kind: "loading", partial, note }),
+        (partial) => setStatus({ kind: "loading", partial, note, ready }),
         controller.signal,
         (message) => {
           note = message;
-          setStatus({ kind: "loading", partial: "", note });
+          setStatus({ kind: "loading", partial: "", note, ready });
         },
+        ready ? { provider: "demo" } : undefined,
       );
       const saved: SavedPath = { id: crypto.randomUUID(), createdAt: Date.now(), request, path, checked: [] };
       climb(1, () => updatePaths((prev) => [saved, ...prev]));
@@ -238,13 +243,22 @@ export default function Home() {
         />
       )}
 
-      <PathForm onSubmit={generate} disabled={status.kind === "loading"} onTopicChange={setTypedTopic} />
+      <PathForm onSubmit={(request) => generate(request)} disabled={status.kind === "loading"} onTopicChange={setTypedTopic} />
+      <div className="mt-4">
+        <ReadyPaths onPick={(topic) => void generate({ topic }, true)} disabled={status.kind === "loading"} />
+      </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_260px]">
         <main className="min-w-0 space-y-6">
-          {status.kind === "loading" && lastRequest && <LoadingPanel topic={lastRequest.topic} partial={status.partial} note={status.note} engine={engine} local={aiSettings.provider === "ollama"} />}
+          {status.kind === "loading" && lastRequest && <LoadingPanel
+              topic={lastRequest.topic}
+              partial={status.partial}
+              note={status.note}
+              engine={status.ready ? "Ladderly's ready-made paths" : engine}
+              local={!status.ready && aiSettings.provider === "ollama"}
+            />}
           {status.kind === "error" && lastRequest && (
-            <ErrorPanel message={status.message} onRetry={() => generate(lastRequest)} />
+            <ErrorPanel message={status.message} onRetry={() => generate(lastRequest, lastReady)} />
           )}
           {status.kind !== "loading" && active && (
             <PathView

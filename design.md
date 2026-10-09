@@ -51,7 +51,7 @@ build/icon.svg       Logo source: a white ladder rising toward a yellow star on 
 build/icon.png       App icon rendered from icon.svg (the installer and .exe icons are generated from it)
 src/
   app/
-    layout.tsx       HTML shell, fonts, no-flash theme script, demo banner
+    layout.tsx       HTML shell, fonts, no-flash theme script
     page.tsx         The single page: state and layout
     api/path/route.ts  POST endpoint: validates, streams, calls Claude or serves demo data
   components/        Presentational React components (form, cards, panels, list…)
@@ -79,7 +79,7 @@ src/
 
 ## 2.1 Website and downloads
 
-- **Routes:** `/` is the website (a static, pre-rendered server component, `src/app/page.tsx`); `/app` is the learning app (`src/app/app/page.tsx`), whose layout adds the demo banner. Electron loads `${url}/app`.
+- **Routes:** `/` is the website (a static, pre-rendered server component, `src/app/page.tsx`); `/app` is the learning app (`src/app/app/page.tsx`), with a "Ready-made paths" picker under the search box. Electron loads `${url}/app`.
 - **Download flow:** `GET /api/download` reads `x-vercel-ip-country`, normalises it (`XX` when missing), and, unless the `ladderly_dl` cookie is set or the user agent looks like a crawler, calls `recordDownload`, then sets the cookie (1 year, httpOnly) and returns a 302 to `LADDERLY_DOWNLOAD_URL` or the GitHub "latest release" asset URL. electron-builder names the installer `Ladderly-Setup.exe` so that URL is stable.
 - **Storage:** `lib/server/downloadStats.ts` talks to Upstash Redis over its REST `/pipeline` endpoint with `fetch` (no extra dependency): `HINCRBY ladderly:downloads:countries <CC> 1` and `INCR ladderly:downloads:total`. It reads `KV_REST_API_URL`/`KV_REST_API_TOKEN` (Vercel's Upstash integration) or `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`. Without them, counting is a no-op and stats report `enabled: false`; errors are logged without details and never block the redirect.
 - **Map:** `GET /api/downloads` returns `{ enabled, total, countries }` with `s-maxage=60`. `components/site/DownloadMap.tsx` projects Natural Earth 110m country shapes (`world-atlas`, bundled) with `d3-geo`'s Natural Earth projection, maps ISO alpha-2 codes to the shapes' numeric ids with `i18n-iso-countries`, and shades countries on a log scale (5 levels). Country names come from `Intl.DisplayNames`. Ranks are numbers rather than flag emoji, because Windows doesn't draw flag emoji.
@@ -296,9 +296,9 @@ flowchart LR
 | anything else | missing or empty | **Demo** (fail-safe: no key means no paid calls) |
 | anything else | set | Real generation |
 
-Demo responses go through the same NDJSON stream, with small delays between chunks, and are validated with the same schema. That means the UI code has no demo-specific branches, apart from the banner.
+Demo responses go through the same NDJSON stream, with small delays between chunks, and are validated with the same schema. That means the UI code has no demo-specific branches.
 
-`DemoBanner` is an async server component that calls `connection()`, so it is rendered **per request**, not at build time. This matters for the desktop app, which decides demo mode at launch, after the build.
+The built-in paths are offered through the **Ready-made paths** picker (`ReadyPaths`, catalogue in `lib/readyPaths.ts`): category → grade (students) → topic. Picking one calls `generate({ topic }, true)`, which sends `ai: { provider: "demo" }` regardless of the user's engine, so it's instant, free, skips web search, and works offline in the desktop app. Retry remembers that it was a ready-made path. The old demo banner was removed.
 
 ## 7. Client state and persistence
 
