@@ -1,6 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "ladderly", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 3000 }
+    { "name": "ladderly", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 3000 },
+    { "name": "personal-site", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "C:/Users/karth/unfiltered-karthik", "run", "dev", "--", "-p", "3100"], "port": 3100 }
   ]
 }

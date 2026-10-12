@@ -24,6 +24,7 @@ import { engineLabel } from "@/lib/ai/models";
 import { useAiSettings } from "@/lib/ai/settingsStore";
 import { useAiStatus } from "@/lib/ai/useAiStatus";
 import { climb } from "@/lib/celebrate";
+import { useCountVisit } from "@/lib/countVisit";
 import { dayKey } from "@/lib/dates";
 import { generatePath } from "@/lib/generate";
 import { isReturningVisit, useProfile } from "@/lib/profile";
@@ -53,6 +54,7 @@ export default function Home() {
   const { status: aiStatus, refresh: refreshAiStatus } = useAiStatus();
   const engine = engineLabel(aiSettings, aiStatus);
   const profile = useProfile();
+  useCountVisit();
   const activity = useActivity();
   const [nameOpen, setNameOpen] = useState(false);
   // Ask for a name on the first visit, once the profile has loaded from this device.

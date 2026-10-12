@@ -169,7 +169,8 @@ src/
     app/page.tsx        # The learning app (/app): form, loading/error states, path view, history
     app/layout.tsx      # The app's page title
     api/download/       # Counts a download by country, then redirects to the installer
-    api/downloads/      # Download totals per country, for the map
+    api/downloads/      # Download and browser-learner totals per country, for the map
+    api/visit/          # Counts one browser learner by country (once per browser)
     api/feedback/       # Saves feedback (POST); lists it for the admin (GET)
     admin/feedback/     # Private feedback inbox (password: FEEDBACK_ADMIN_TOKEN)
     globals.css         # Tailwind + class-based dark mode
@@ -222,6 +223,7 @@ src/
     demoIndia.ts        # CBSE/NCERT Class 11-12 demo paths (maths, physics, chemistry, biology, CS)
     demoIndiaVideos.ts  # Verified per-stage videos for the Class 11-12 paths
     readyPaths.ts       # The ready-made path catalogue for the picker
+    countVisit.ts       # Counts this browser once as a web learner
     topicTheme.ts       # Topic keywords → background colours and symbols
 ```
 
