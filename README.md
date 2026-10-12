@@ -119,7 +119,7 @@ Only a two-letter country code (from Vercel's `x-vercel-ip-country` header) and 
 
 ## Releasing updates (desktop app)
 
-Installed apps check GitHub Releases when they start and every 6 hours (or via **Help → Check for Updates**). When a newer version is out they show *"Ladderly X is available · Update now"*. One click downloads the installer (with progress), checks its SHA-512 against `latest.yml`, installs it silently and reopens Ladderly.
+Installed apps check GitHub Releases when they start, every hour, and when you come back to the app after an hour (or via **Help → Check for Updates**). When a newer version is out they show *"Ladderly X is available · Update now"*. One click downloads the installer (with progress), checks its SHA-512 against `latest.yml`, installs it silently and reopens Ladderly.
 
 To ship an update:
 

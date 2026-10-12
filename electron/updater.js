@@ -8,8 +8,8 @@ const { checkForUpdate, downloadInstaller } = require("./update-core");
 
 /** Where the latest release's files are (latest.yml and the installer). */
 const RELEASE_FEED = "https://github.com/kprakz/ladderly/releases/latest/download";
-/** How often to check again while the app stays open. */
-const CHECK_EVERY_MS = 6 * 60 * 60 * 1000;
+/** How often to check again while the app stays open (also the minimum gap for checks when the window is focused). */
+const CHECK_EVERY_MS = 60 * 60 * 1000;
 /** Wait a little after startup so the check doesn't slow the first load. */
 const FIRST_CHECK_DELAY_MS = 10 * 1000;
 
@@ -27,6 +27,8 @@ let state = { status: "idle", currentVersion: app.getVersion() };
 /** @type {import("./update-core").UpdateInfo | null} */
 let available = null;
 let serverOrigin = "";
+/** When the last check started (ms), so focusing the window doesn't check more than once an hour. */
+let lastCheckAt = 0;
 
 /**
  * The release feed: GitHub, or LADDERLY_UPDATE_FEED when testing an unpackaged build.
@@ -54,6 +56,7 @@ function setState(changes) {
  */
 async function checkNow({ interactive = false } = {}) {
   if (state.status === "downloading" || state.status === "installing") return state;
+  lastCheckAt = Date.now();
   setState({ status: "checking", message: undefined });
   try {
     available = await checkForUpdate({ feedUrl: feedUrl(), currentVersion: app.getVersion() });
@@ -126,6 +129,10 @@ function initUpdater(serverUrl) {
   if (app.isPackaged || process.env.LADDERLY_UPDATE_FEED) {
     setTimeout(() => void checkNow(), FIRST_CHECK_DELAY_MS);
     setInterval(() => void checkNow(), CHECK_EVERY_MS).unref();
+    // Coming back to the app after a while also checks, so one early "up to date" never means a long wait.
+    app.on("browser-window-focus", () => {
+      if (Date.now() - lastCheckAt >= CHECK_EVERY_MS) void checkNow();
+    });
   }
 }
 

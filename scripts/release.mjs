@@ -36,4 +36,4 @@ if (run(`gh release view ${tag}`).status === 0) fail(`Release ${tag} already exi
 console.log(`Publishing Ladderly ${version} as ${tag}…`);
 const result = spawnSync("gh", ["release", "create", tag, ...files, "--title", `Ladderly ${version}`, "--generate-notes", "--latest"], { stdio: "inherit" });
 if (result.status !== 0) fail("Publishing failed (see above).");
-console.log(`\n✔ Released ${tag}. Installed apps will offer the update within a few hours (or via Help → Check for Updates).`);
+console.log(`\n✔ Released ${tag}. Installed apps will offer the update within an hour (or right away via Help → Check for Updates).`);
