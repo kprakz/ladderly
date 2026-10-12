@@ -33,7 +33,7 @@ export function LoadingPanel({ topic, partial, note, engine, local }: { topic: s
   const elapsed = seconds >= 60 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${seconds}s`;
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900" aria-live="polite">
+    <div id="loading-panel" className="scroll-mt-4 rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900" aria-live="polite">
       <div className="flex items-center gap-3">
         <span className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
         <p className="flex-1 font-medium">

@@ -47,13 +47,14 @@ function subscribe(listener: () => void) {
 const NONE: Toast[] = [];
 
 /**
- * Renders the current toasts in the bottom-right corner, announced politely to screen readers.
+ * Renders the current toasts (at the top on phones, so they never cover buttons; bottom-right on larger screens),
+ * announced politely to screen readers.
  * @returns {JSX.Element} The toast stack.
  */
 export function Toaster() {
   const list = useSyncExternalStore(subscribe, () => toasts, () => NONE);
   return (
-    <div aria-live="polite" className="pointer-events-none fixed bottom-16 right-4 z-50 flex flex-col items-end gap-2 sm:bottom-4">
+    <div aria-live="polite" className="pointer-events-none fixed inset-x-4 top-4 z-50 flex flex-col items-center gap-2 sm:inset-x-auto sm:bottom-4 sm:right-4 sm:top-auto sm:items-end">
       {list.map((t) => (
         <div
           key={t.id}

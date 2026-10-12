@@ -7,7 +7,8 @@ const field =
   "rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-900";
 
 /**
- * Form for the topic, with the optional level, hours per week and goal behind a clear "Personalise" button.
+ * Form for the topic, then a clear "Personalise" button for the optional level, hours per week and goal, then
+ * "Find my path" (which shows a spinner, not a different label, while a path is being written).
  * @param {Object} props
  * @param {(req: PathRequest) => void} props.onSubmit Called with the cleaned-up request when the form is submitted.
  * @param {boolean} props.disabled Disables the submit button (while a path is being generated).
@@ -48,28 +49,19 @@ export function PathForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2">
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <input
-          value={topic}
-          onChange={(e) => {
-            setTopic(e.target.value);
-            onTopicChange?.(e.target.value);
-          }}
-          placeholder='What do you want to learn? e.g. "guitar", "machine learning"'
-          aria-label="Skill or topic"
-          maxLength={120}
-          className={`${field} flex-1 py-3 text-base`}
-          autoFocus
-        />
-        <button
-          type="submit"
-          disabled={disabled || !topic.trim()}
-          className="rounded-lg bg-indigo-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {disabled ? "Generating…" : "Find my path"}
-        </button>
-      </div>
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <input
+        value={topic}
+        onChange={(e) => {
+          setTopic(e.target.value);
+          onTopicChange?.(e.target.value);
+        }}
+        placeholder='What do you want to learn? e.g. "guitar", "machine learning"'
+        aria-label="Skill or topic"
+        maxLength={120}
+        className={`${field} w-full py-3 text-base`}
+        autoFocus
+      />
 
       <button
         type="button"
@@ -125,6 +117,17 @@ export function PathForm({
         </label>
       </div>
       )}
+
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          disabled={disabled || !topic.trim()}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-base font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+        >
+          {disabled && <span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+          Find my path
+        </button>
+      </div>
     </form>
   );
 }

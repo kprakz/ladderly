@@ -83,6 +83,11 @@ export default function Home() {
     setLastRequest(request);
     setLastReady(ready);
     setStatus({ kind: "loading", partial: "", ready });
+    // On small screens the progress panel starts below the fold; bring it into view so people see it working.
+    requestAnimationFrame(() => {
+      const panel = document.getElementById("loading-panel");
+      if (panel && panel.getBoundingClientRect().top > window.innerHeight * 0.6) panel.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
     try {
       let note: string | undefined;
       const path = await generatePath(
@@ -197,7 +202,8 @@ export default function Home() {
       <ShootingStars anchorId="ladderly-logo" />
       <UpdateBanner />
       <header className="relative mb-8">
-        <div className="absolute right-0 top-0 flex items-center gap-1">
+        {/* Above the logo's tap area (z-40), so Feedback and Settings always get the tap on phones */}
+        <div className="absolute right-0 top-0 z-50 flex items-center gap-1">
           <FeedbackButton
             source="app"
             title="Share your feedback"
