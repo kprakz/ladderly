@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import type { PathRequest } from "@/lib/schema";
+import { suggestSpelling } from "@/lib/spelling";
 
 const field =
   "rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-900";
 
 /**
  * Form for the topic, then a clear "Personalise" button for the optional level, hours per week and goal, then
- * "Find my path" (which shows a spinner, not a different label, while a path is being written).
+ * "Find my path" (which shows a spinner, not a different label, while a path is being written). If the topic looks
+ * misspelled ("puthon"), it first asks "Did you mean python?" and lets the learner pick either spelling.
  * @param {Object} props
  * @param {(req: PathRequest) => void} props.onSubmit Called with the cleaned-up request when the form is submitted.
  * @param {boolean} props.disabled Disables the submit button (while a path is being generated).
@@ -29,23 +31,48 @@ export function PathForm({
   const [hours, setHours] = useState("");
   const [goal, setGoal] = useState("");
   const [showOptions, setShowOptions] = useState(false);
+  /** A suggested spelling waiting for an answer, e.g. "python" for "puthon". */
+  const [suggestion, setSuggestion] = useState<string | null>(null);
   const optionCount = [level, hours, goal].filter(Boolean).length;
 
   /**
-   * Converts the form fields into a `PathRequest` (empty options become `undefined`, hours are clamped to 1–80).
+   * Sends the request for a topic (empty options become `undefined`, hours are clamped to 1–80).
+   * @param {string} text The topic to use.
+   * @returns {void}
+   */
+  function send(text: string) {
+    setSuggestion(null);
+    const hoursNum = Number(hours);
+    onSubmit({
+      topic: text.trim(),
+      level: (level || undefined) as PathRequest["level"],
+      hoursPerWeek: hours && hoursNum > 0 ? Math.min(80, Math.round(hoursNum)) : undefined,
+      goal: (goal || undefined) as PathRequest["goal"],
+    });
+  }
+
+  /**
+   * Handles "Find my path": asks "Did you mean…?" first when the topic looks misspelled, otherwise sends it.
    * @param {React.FormEvent} e The submit event; its default page reload is prevented.
    * @returns {void}
    */
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!topic.trim()) return;
-    const hoursNum = Number(hours);
-    onSubmit({
-      topic: topic.trim(),
-      level: (level || undefined) as PathRequest["level"],
-      hoursPerWeek: hours && hoursNum > 0 ? Math.min(80, Math.round(hoursNum)) : undefined,
-      goal: (goal || undefined) as PathRequest["goal"],
-    });
+    const fix = suggestSpelling(topic);
+    if (fix) setSuggestion(fix);
+    else send(topic);
+  }
+
+  /**
+   * Accepts the suggested spelling: puts it in the box and sends it.
+   * @returns {void}
+   */
+  function acceptSuggestion() {
+    if (!suggestion) return;
+    setTopic(suggestion);
+    onTopicChange?.(suggestion);
+    send(suggestion);
   }
 
   return (
@@ -55,6 +82,7 @@ export function PathForm({
         onChange={(e) => {
           setTopic(e.target.value);
           onTopicChange?.(e.target.value);
+          setSuggestion(null);
         }}
         placeholder='What do you want to learn? e.g. "guitar", "machine learning"'
         aria-label="Skill or topic"
@@ -62,6 +90,31 @@ export function PathForm({
         className={`${field} w-full py-3 text-base`}
         autoFocus
       />
+
+      {suggestion && (
+        <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40">
+          <p className="text-base">
+            Did you mean <strong className="font-semibold">{suggestion}</strong>?
+          </p>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={acceptSuggestion}
+              autoFocus
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+            >
+              Yes, use &ldquo;{suggestion}&rdquo;
+            </button>
+            <button
+              type="button"
+              onClick={() => send(topic)}
+              className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            >
+              No, search &ldquo;{topic.trim()}&rdquo;
+            </button>
+          </div>
+        </div>
+      )}
 
       <button
         type="button"

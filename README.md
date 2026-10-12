@@ -224,6 +224,7 @@ src/
     demoIndiaVideos.ts  # Verified per-stage videos for the Class 11-12 paths
     readyPaths.ts       # The ready-made path catalogue for the picker
     countVisit.ts       # Counts this browser once as a web learner
+    spelling.ts         # "Did you mean…?" typo check for topics
     topicTheme.ts       # Topic keywords → background colours and symbols
 ```
 
