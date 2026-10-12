@@ -8,8 +8,17 @@ import { feature } from "topojson-client";
 import type { GeometryCollection, Topology } from "topojson-specification";
 import world from "world-atlas/countries-110m.json";
 
-/** Totals from GET /api/downloads. */
-type Stats = { enabled: boolean; total: number; countries: Record<string, number> };
+/** Totals from GET /api/downloads: Windows app downloads, and people trying the app in a browser (`web`). */
+type Totals = { total: number; countries: Record<string, number> };
+type Stats = { enabled: boolean; web?: Totals } & Totals;
+
+/** Which learners the map shows. */
+type View = "all" | "downloads" | "web";
+const VIEWS: { id: View; label: string }[] = [
+  { id: "all", label: "Everyone" },
+  { id: "downloads", label: "Windows app" },
+  { id: "web", label: "In the browser" },
+];
 
 /** Grid size: one square per cell, like GitHub's contribution graph. */
 const COLS = 120;
@@ -147,16 +156,18 @@ function shadeFor(count: number, max: number): number {
 }
 
 /**
- * World map of Ladderly downloads drawn as GitHub-style squares: land is a grid of small rounded squares, and
- * countries with downloads are shaded from light (few) to dark (many) in Ladderly's indigo. When the map scrolls
- * into view, each country's colour spreads outward from its centre, starting with the country with the most
- * downloads. Totals come from /api/downloads; hovering a square shows the country and its count.
+ * World map of Ladderly learners drawn as GitHub-style squares: land is a grid of small rounded squares, and
+ * countries are shaded from light (few) to dark (many) in Ladderly's indigo. It counts Windows app downloads and
+ * people trying the app in a browser; switches show everyone, or just one group. When the map scrolls into view (or
+ * the switch changes), each country's colour spreads outward from its centre, the busiest country first. Hovering a
+ * square shows the country with both numbers. Totals come from /api/downloads.
  * @returns {JSX.Element} The map section content.
  */
 export function DownloadMap() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [failed, setFailed] = useState(false);
   const [started, setStarted] = useState(false);
+  const [view, setView] = useState<View>("all");
   const ref = useRef<HTMLDivElement>(null);
   const grid = useSyncExternalStore(noSubscribe, buildGrid, noGrid);
 
@@ -190,13 +201,32 @@ export function DownloadMap() {
 
   const names = useMemo(() => new Intl.DisplayNames(["en"], { type: "region" }), []);
 
-  // Downloads per country, keyed by the map's numeric ids, ranked so the busiest country spreads first.
+  const downloads = stats?.total ?? 0;
+  const browser = stats?.web?.total ?? 0;
+  const anyone = downloads + browser;
+
+  // Counts per country (keyed by the map's numeric ids) for the chosen view, ranked so the busiest spreads first.
   const { byNumeric, rank, max, countryCount } = useMemo(() => {
-    const counts = new Map<string, { count: number; code: string }>();
-    for (const [code, count] of Object.entries(stats?.countries ?? {})) {
-      const numeric = countries.alpha2ToNumeric(code);
-      if (numeric && count > 0) counts.set(numeric, { count: (counts.get(numeric)?.count ?? 0) + count, code });
-    }
+    const counts = new Map<string, { count: number; downloads: number; web: number; code: string }>();
+    /**
+     * Adds one source of counts into the map.
+     * @param {Record<string, number> | undefined} source Counts per country code.
+     * @param {"downloads" | "web"} kind Which source it is.
+     * @returns {void}
+     */
+    const add = (source: Record<string, number> | undefined, kind: "downloads" | "web") => {
+      for (const [code, n] of Object.entries(source ?? {})) {
+        const numeric = countries.alpha2ToNumeric(code);
+        if (!numeric || n <= 0) continue;
+        const entry = counts.get(numeric) ?? { count: 0, downloads: 0, web: 0, code };
+        entry[kind] += n;
+        counts.set(numeric, entry);
+      }
+    };
+    add(stats?.countries, "downloads");
+    add(stats?.web?.countries, "web");
+    for (const entry of counts.values()) entry.count = view === "all" ? entry.downloads + entry.web : entry[view];
+    for (const [id, entry] of counts) if (entry.count === 0) counts.delete(id);
     const order = [...counts.entries()].sort((a, b) => b[1].count - a[1].count).map(([id]) => id);
     return {
       byNumeric: counts,
@@ -204,27 +234,53 @@ export function DownloadMap() {
       max: Math.max(0, ...[...counts.values()].map((c) => c.count)),
       countryCount: counts.size,
     };
-  }, [stats]);
+  }, [stats, view]);
+
+  /**
+   * "3 downloads" / "1 download" style plurals.
+   * @param {number} n The number.
+   * @param {string} word The singular word.
+   * @returns {string} The phrase.
+   */
+  const plural = (n: number, word: string) => `${n.toLocaleString()} ${word}${n === 1 ? "" : "s"}`;
 
   return (
     <div>
-      {stats?.enabled && stats.total > 0 && (
-        <p className="text-center text-sm text-zinc-500">
-          <strong className="text-zinc-900 dark:text-zinc-100">{stats.total.toLocaleString()}</strong> downloads in{" "}
-          <strong className="text-zinc-900 dark:text-zinc-100">{countryCount.toLocaleString()}</strong>{" "}
-          {countryCount === 1 ? "country" : "countries"}
-        </p>
+      {stats?.enabled && anyone > 0 && (
+        <>
+          <p className="text-center text-sm text-zinc-500">
+            <strong className="text-zinc-900 dark:text-zinc-100">{downloads.toLocaleString()}</strong> {downloads === 1 ? "download" : "downloads"} ·{" "}
+            <strong className="text-zinc-900 dark:text-zinc-100">{browser.toLocaleString()}</strong> {browser === 1 ? "learner" : "learners"} in the browser
+          </p>
+          <div role="radiogroup" aria-label="Show" className="mt-4 flex justify-center gap-1.5">
+            {VIEWS.map((v) => (
+              <button
+                key={v.id}
+                role="radio"
+                aria-checked={view === v.id}
+                onClick={() => setView(v.id)}
+                className={`rounded-full px-3 py-1 text-sm transition ${
+                  view === v.id ? "bg-indigo-600 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                }`}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       <div ref={ref} className={`relative mt-6 ${started ? "map-started" : ""}`}>
+        {/* Re-mounted when the view changes, so the colours spread again */}
         <svg
+          key={view}
           viewBox={`0 0 ${COLS * CELL} ${ROWS * CELL}`}
           className="h-auto w-full"
           role="img"
-          aria-label={stats?.enabled ? `Map of Ladderly downloads in ${countryCount} countries` : "World map"}
+          aria-label={stats?.enabled ? `Map of Ladderly learners in ${countryCount} countries` : "World map"}
         >
           {grid?.cells.map((c) => {
-            // On a shared square, show the country with the most downloads.
+            // On a shared square, show the country with the higher count.
             const id = c.ids.reduce((best, x) => ((byNumeric.get(x)?.count ?? 0) > (byNumeric.get(best)?.count ?? 0) ? x : best), c.ids[0]);
             const hit = byNumeric.get(id);
             const x = c.col * CELL;
@@ -246,17 +302,17 @@ export function DownloadMap() {
                 className={`map-spread ${SHADES[shadeFor(hit.count, max)]}`}
                 style={{ animationDelay: `${Math.round(delay)}ms`, transformOrigin: `${x + CELL / 2}px ${y + CELL / 2}px` }}
               >
-                <title>{`${names.of(hit.code) ?? hit.code}: ${hit.count.toLocaleString()} download${hit.count === 1 ? "" : "s"}`}</title>
+                <title>{`${names.of(hit.code) ?? hit.code}: ${plural(hit.downloads, "download")}, ${plural(hit.web, "learner")} in the browser`}</title>
               </rect>,
             ];
           })}
         </svg>
         {(failed || (stats && !stats.enabled)) && (
           <p className="absolute inset-x-0 top-1/2 mx-auto w-fit -translate-y-1/2 rounded-full bg-white/90 px-4 py-2 text-sm text-zinc-600 shadow-sm dark:bg-zinc-900/90 dark:text-zinc-300">
-            Download counts will appear here soon.
+            Learner counts will appear here soon.
           </p>
         )}
-        {stats?.enabled && stats.total === 0 && (
+        {stats?.enabled && anyone === 0 && (
           <p className="absolute inset-x-0 top-1/2 mx-auto w-fit -translate-y-1/2 rounded-full bg-white/90 px-4 py-2 text-sm text-zinc-600 shadow-sm dark:bg-zinc-900/90 dark:text-zinc-300">
             Be the first to put your country on the map ✨
           </p>
@@ -273,7 +329,8 @@ export function DownloadMap() {
         More
       </div>
       <p className="mt-4 text-center text-xs text-zinc-500">
-        Counted once per browser, by country only. No IP addresses or personal details are stored.
+        Downloads and browser learners are counted once per browser, by country only. No IP addresses or personal
+        details are stored.
       </p>
     </div>
   );
