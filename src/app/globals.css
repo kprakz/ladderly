@@ -123,6 +123,20 @@
   }
 }
 
+/* "Did you mean…?" nudge when Enter is pressed instead of choosing. */
+@keyframes nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-6px);
+  }
+  75% {
+    transform: translateX(6px);
+  }
+}
+
 /* Download map: coloured squares pop in and spread outward from each country's centre once the map is in view. */
 .map-spread {
   opacity: 0;

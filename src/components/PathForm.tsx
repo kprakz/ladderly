@@ -33,6 +33,8 @@ export function PathForm({
   const [showOptions, setShowOptions] = useState(false);
   /** A suggested spelling waiting for an answer, e.g. "python" for "puthon". */
   const [suggestion, setSuggestion] = useState<string | null>(null);
+  /** Bumped when Enter is pressed while the question is showing, to replay a small "please choose" nudge. */
+  const [nudge, setNudge] = useState(0);
   const optionCount = [level, hours, goal].filter(Boolean).length;
 
   /**
@@ -52,13 +54,19 @@ export function PathForm({
   }
 
   /**
-   * Handles "Find my path": asks "Did you mean…?" first when the topic looks misspelled, otherwise sends it.
+   * Handles "Find my path" (button or Enter): asks "Did you mean…?" first when the topic looks misspelled, otherwise
+   * sends it. While the question is showing, submitting again doesn't choose for the learner: it just nudges the
+   * question, so they pick "Yes" or "No" themselves.
    * @param {React.FormEvent} e The submit event; its default page reload is prevented.
    * @returns {void}
    */
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!topic.trim()) return;
+    if (suggestion) {
+      setNudge((n) => n + 1);
+      return;
+    }
     const fix = suggestSpelling(topic);
     if (fix) setSuggestion(fix);
     else send(topic);
@@ -92,15 +100,19 @@ export function PathForm({
       />
 
       {suggestion && (
-        <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40">
+        <div
+          key={nudge}
+          role="alert"
+          className={`rounded-xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40 ${nudge ? "animate-[nudge_0.35s_ease-in-out] motion-reduce:animate-none" : ""}`}
+        >
           <p className="text-base">
             Did you mean <strong className="font-semibold">{suggestion}</strong>?
           </p>
+          <p className="mt-0.5 text-xs text-zinc-500">Choose one to continue.</p>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <button
               type="button"
               onClick={acceptSuggestion}
-              autoFocus
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
             >
               Yes, use &ldquo;{suggestion}&rdquo;
