@@ -110,6 +110,10 @@ src/
 - **Measured cost on a laptop** (`gemma3:1b` in Ollama): reading about 1,200 tokens of results took 10.7 s (≈113 tokens/s), against roughly 2 minutes for a whole path; larger local models read more slowly.
 - **Class 11–12 demos** (`lib/demoIndia.ts`): five hand-written paths checked against the official CBSE 2025–26 syllabus PDFs, with `INDIA_SAMPLES` placed before the Python sample in `demo.ts` so "class 12 computer science" matches first. Each sample carries its own `next` topics. The local `q()` helper rotates each question's options by a fixed amount derived from its text, spreading correct answers across A–D.
 
+## 2.6 Spelling suggestions
+
+`lib/spelling.ts` compares each word of the topic with a vocabulary built from `KNOWN_TOPICS` using an optimal-string-alignment edit distance (insertions, deletions, substitutions and adjacent swaps, with early exit). Words of 3 letters or fewer are never corrected; 4–7 letters may be 1 edit away, longer words 2. Words in any known topic are never treated as typos, and corrections only go to one-word skills or phrase words of 6+ letters (`TARGETS`). `PathForm` calls `suggestSpelling` on submit and shows the "Did you mean…?" choice instead of sending; editing the box clears it.
+
 ## 3. Request flow
 
 ```mermaid
