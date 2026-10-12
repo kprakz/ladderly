@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
 import { AiSettingsDialog } from "@/components/AiSettingsDialog";
 import { AuthorNote } from "@/components/AuthorNote";
@@ -24,6 +25,7 @@ import { engineLabel } from "@/lib/ai/models";
 import { useAiSettings } from "@/lib/ai/settingsStore";
 import { useAiStatus } from "@/lib/ai/useAiStatus";
 import { climb } from "@/lib/celebrate";
+import { desktopBridge } from "@/lib/desktop";
 import { useCountVisit } from "@/lib/countVisit";
 import { dayKey } from "@/lib/dates";
 import { generatePath } from "@/lib/generate";
@@ -187,6 +189,18 @@ export default function Home() {
   }
 
   /**
+   * The logo opens the homepage. In the desktop app, the site's own home page is the download page, so it opens the
+   * Ladderly website in the person's browser instead (the desktop shell sends new windows to the default browser).
+   * @param {React.MouseEvent<HTMLAnchorElement>} e The click.
+   * @returns {void}
+   */
+  function openHomepage(e: React.MouseEvent<HTMLAnchorElement>) {
+    if (!desktopBridge()) return;
+    e.preventDefault();
+    window.open("https://ladderly.vercel.app/", "_blank", "noopener");
+  }
+
+  /**
    * Removes a saved path. (Its past activity stays in the heatmap.)
    * @param {string} id The saved path's ID.
    * @returns {void}
@@ -227,9 +241,16 @@ export default function Home() {
         {/* Above the shooting-star canvas (z-30), so stars appear to fly out from under the logo */}
         {/* Icon: shooting stars. Name: it glows and the logo's star twinkles. */}
         <div className="brand relative z-40 mx-auto flex w-fit cursor-default items-center justify-center gap-3 pt-10 sm:pt-0">
-          <span id="ladderly-logo" className="shrink-0">
+          <Link
+            id="ladderly-logo"
+            href="/"
+            onClick={openHomepage}
+            aria-label="Ladderly homepage"
+            title="Ladderly homepage"
+            className="shrink-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+          >
             <Logo size={52} className="block rounded-xl ring-1 ring-black/5 dark:ring-white/15" />
-          </span>
+          </Link>
           <h1 className="brand-text text-3xl font-bold tracking-tight">Ladderly</h1>
         </div>
         <p className="mt-1 text-center text-sm font-medium text-zinc-500 dark:text-zinc-400">The first step towards you</p>
