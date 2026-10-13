@@ -10,6 +10,7 @@ Type any skill or topic ("guitar", "machine learning", "public speaking") and ge
 - Finish a path and get three suggestions for what to learn next, each one click away
 - Free demo paths for CBSE/NCERT Class 11–12 maths, physics, chemistry, biology and computer science
 - Optional web search (your own Tavily or Brave key) for up-to-date paths with real links
+- A free open-source model that runs right in your browser (WebGPU), and one-click Ollama setup in the Windows app
 - A calm, student-friendly layout: a personal welcome ("Welcome back, Alex"), your streak, today's goal and the one next step. A GitHub-style heatmap, ❄️ rest days and badges are one click away under "My progress"
 - Paths and progress are saved in your browser (localStorage)
 - Live streaming preview while the path is generated, and friendly errors with a retry button
@@ -151,6 +152,8 @@ electron/
   server.js             # Starts the bundled Next.js server and waits until it's ready
   config.js             # Reads the desktop settings file (API key, demo mode)
   updater.js            # Checks for, downloads and installs updates
+  ollamaSetup.js        # "Set up for me": downloads, verifies and silently installs Ollama
+  signature.js          # Checks a downloaded program's Windows signature
   update-core.js        # Update checks, downloads and checksum verification (no Electron, testable)
   preload.js            # The small window.ladderly bridge (version and updates)
 scripts/
@@ -184,7 +187,9 @@ src/
     VideoCard.tsx       # Video card with hover zoom and rotating in-video frames
     Disclosure.tsx      # Accessible animated dropdown
     StageQuiz.tsx       # Per-stage multiple-choice quiz
-    AiSettingsDialog.tsx  # AI engine settings: demo, local models (Ollama), Claude, OpenAI
+    AiSettingsDialog.tsx  # AI engine settings: demo, in-browser model, local models (Ollama), Claude, OpenAI
+    BrowserModelPanel.tsx # Pick, download and remove the in-browser model
+    OllamaSetupCard.tsx # "Set up for me": installs Ollama and a model (desktop app)
     ReadyPaths.tsx      # "Ready-made paths" picker: category → grade → topic
     Logo.tsx            # The Ladderly logo as an inline SVG
     History.tsx         # Saved paths list

@@ -3,7 +3,8 @@ import { getAiSettings } from "./ai/settingsStore";
 import type { LearningPath, PathRequest, StreamEvent } from "./schema";
 
 /**
- * Requests a learning path from `/api/path` (with the user's AI engine settings) and reads the streamed NDJSON response.
+ * Gets a learning path: from the open-source model running in this browser when that engine is chosen, otherwise
+ * from `/api/path` (with the user's AI engine settings), reading the streamed NDJSON response.
  * @param {PathRequest} request Topic plus optional level, hours per week and goal.
  * @param {(textSoFar: string) => void} onText Called on every chunk with all the raw JSON text received so far (for the live preview).
  * @param {AbortSignal} [signal] Optional signal to cancel the request.
@@ -18,11 +19,20 @@ export async function generatePath(
   onStatus?: (message: string) => void,
   aiOverride?: AiSettings,
 ): Promise<LearningPath> {
+  const ai = aiOverride ?? getAiSettings();
+  // The in-browser model runs right here on the device; no server involved.
+  if (ai.provider === "browser") {
+    const { detectWebGpu, generateInBrowser, recommendBrowserModel } = await import("./ai/browserEngine");
+    const support = await detectWebGpu();
+    if (!support.supported) throw new Error(support.reason ?? "This browser can't run models on this device.");
+    return generateInBrowser(request, ai.browserModel ?? recommendBrowserModel(support), support.f16, onText, onStatus ?? (() => {}), signal);
+  }
+
   const res = await fetch("/api/path", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     // The user's AI engine choice (and their own API key, if they added one) goes with the request.
-    body: JSON.stringify({ ...request, ai: aiOverride ?? getAiSettings() }),
+    body: JSON.stringify({ ...request, ai }),
     signal,
   });
 

@@ -115,4 +115,40 @@ async function downloadInstaller({ url, destination, sha512, size = 0, onProgres
   }
 }
 
-module.exports = { parseLatestYml, compareVersions, checkForUpdate, downloadInstaller };
+/**
+ * Downloads a file to `destination`, reporting progress (for files checked another way, e.g. by their signature).
+ * Deletes the partial file on any failure.
+ * @param {Object} options
+ * @param {string} options.url The file's URL (redirects are followed).
+ * @param {string} options.destination Where to save it.
+ * @param {(fraction: number) => void} [options.onProgress] Called with 0–1 as bytes arrive.
+ * @param {AbortSignal} [options.signal] Cancels the download.
+ * @returns {Promise<string>} The saved file's path.
+ * @throws {Error} On network errors or cancellation.
+ */
+async function downloadFile({ url, destination, onProgress, signal }) {
+  const res = await fetch(url, { redirect: "follow", signal });
+  if (!res.ok || !res.body) throw new Error(`The download failed (${res.status}).`);
+  const total = Number(res.headers.get("content-length")) || 0;
+  const out = createWriteStream(destination);
+  let received = 0;
+  try {
+    const reader = res.body.getReader();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.length;
+      if (!out.write(value)) await new Promise((resolve) => out.once("drain", resolve));
+      if (total) onProgress?.(Math.min(1, received / total));
+    }
+    await new Promise((resolve, reject) => out.end((err) => (err ? reject(err) : resolve(undefined))));
+    if (total && received !== total) throw new Error("The download was incomplete.");
+    return destination;
+  } catch (err) {
+    out.destroy();
+    rmSync(destination, { force: true });
+    throw err;
+  }
+}
+
+module.exports = { parseLatestYml, compareVersions, checkForUpdate, downloadInstaller, downloadFile };
