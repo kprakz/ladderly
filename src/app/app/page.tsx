@@ -284,7 +284,7 @@ export default function Home() {
               partial={status.partial}
               note={status.note}
               engine={status.ready ? "Ladderly's ready-made paths" : engine}
-              local={!status.ready && aiSettings.provider === "ollama"}
+              local={!status.ready && (aiSettings.provider === "ollama" || aiSettings.provider === "browser")}
             />}
           {status.kind === "error" && lastRequest && (
             <ErrorPanel message={status.message} onRetry={() => generate(lastRequest, lastReady)} />

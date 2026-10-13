@@ -145,6 +145,9 @@ function chooseEngine(ai: AiSettings): Engine | "demo" | string {
   switch (ai.provider) {
     case "demo":
       return "demo";
+    case "browser":
+      // Runs entirely in the browser (see lib/ai/browserEngine.ts); it never reaches the server.
+      return "The in-browser model runs on your device, not on the server. Reload the page and try again.";
     case "ollama": {
       if (!isLocalServer()) {
         return "Local models only work in the Ladderly desktop app (or when you run Ladderly on your own computer). Choose another engine in AI settings.";

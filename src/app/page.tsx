@@ -31,14 +31,15 @@ const FEATURES = [
   { icon: "🎯", title: "Quizzes that unlock", text: "Finish a stage's checklist to unlock a short quiz. Every answer comes with an explanation, and your best score is saved." },
   { icon: "🔥", title: "Streaks and rest days", text: "Learn a little each day to grow your streak. Every 7 days in a row earns a ❄️ rest day that protects it when life gets busy." },
   { icon: "📈", title: "Your year at a glance", text: "A GitHub-style heatmap of every step you've taken, a daily goal to aim for, and badges for your milestones." },
-  { icon: "🧠", title: "Choose your AI", text: "Start with the free demo, run a free open-source model on your own computer, or plug in your own Claude or OpenAI key." },
+  { icon: "🧠", title: "Choose your AI", text: "Start with the free demo, run a free open-source model right in your browser or on your own computer, or plug in your own Claude or OpenAI key." },
   { icon: "🔒", title: "Private by design", text: "No account, no sign-up. Your name, paths and progress stay on your device." },
   { icon: "🌙", title: "Calm by design", text: "One next step at a time, a gentle background that matches your topic, and light and dark mode." },
 ];
 
 const ENGINES = [
   { name: "Free demo", cost: "Free", text: "Detailed paths for Class 11–12 maths, physics, chemistry, biology and computer science (CBSE/NCERT), plus guitar, Python, public speaking and machine learning, and a general plan for anything else." },
-  { name: "Local model (Ollama)", cost: "Free", text: "Any topic, generated on your own computer, so it stays private. Ladderly recommends a model that fits your storage and memory. Desktop app only." },
+  { name: "Open-source model in your browser", cost: "Free", text: "Any topic, written by an open-source model running inside your browser on your own device: nothing to install, and your topics stay private. A one-time download of about 0.7–1.7 GB; works best in Chrome or Edge on a laptop." },
+  { name: "Local model (Ollama)", cost: "Free", text: "Any topic, generated on your own computer with faster, larger models. In the Windows app, “Set up for me” installs Ollama and the right model for your computer in one click." },
   { name: "Claude", cost: "Your Anthropic key", text: "The most detailed paths. You pay Anthropic directly for what you use; the key stays on your device." },
   { name: "OpenAI GPT", cost: "Your OpenAI key", text: "Detailed paths with GPT models. You pay OpenAI directly for what you use; the key stays on your device." },
 ];
@@ -47,9 +48,9 @@ const FAQ = [
   { q: "Is Ladderly really free?", a: "Yes. The app, the demo paths and local AI models are free. Only if you choose to use your own Claude or OpenAI key do you pay those companies for what you use." },
   { q: "Do I need an account?", a: "No. There's nothing to sign up for. Open the app and start learning." },
   { q: "Where is my data stored?", a: "On your device only: your name, paths, progress and streaks. Ladderly has no server-side accounts and doesn't track you." },
-  { q: "Does it work offline?", a: "The desktop app works offline with the demo paths, and with a local model once it's downloaded. Videos and course links need the internet." },
+  { q: "Does it work offline?", a: "The ready-made paths work offline in the desktop app, and so does a local model once it's downloaded. Videos and course links need the internet." },
   { q: "Windows says “Windows protected your PC”. Is that OK?", a: "Ladderly is new, so Windows SmartScreen may not recognise it yet. Click “More info”, then “Run anyway”. The full source code is on GitHub if you'd like to check it." },
-  { q: "Is there a Mac or Linux version?", a: "Not yet. On a Mac, Linux or a phone, use Ladderly in your browser: it's the same app (local AI models need the Windows app)." },
+  { q: "Is there a Mac or Linux version?", a: "Not yet. On a Mac, Linux or a phone, use Ladderly in your browser: it's the same app, including the free open-source model that runs in your browser." },
   { q: "Is it open source?", a: "Yes. The code is on GitHub, and contributions and ideas are welcome." },
 ];
 

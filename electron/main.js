@@ -4,6 +4,7 @@ const { app, BrowserWindow, Menu, dialog, nativeTheme, shell } = require("electr
 const { configPath, configToEnv, ensureConfigFile, loadConfig } = require("./config");
 const { choosePort, startServer } = require("./server");
 const { checkNow, initUpdater } = require("./updater");
+const { initOllamaSetup } = require("./ollamaSetup");
 
 /** Fixed local port, so localStorage (saved paths) keeps the same origin between launches. */
 const PREFERRED_PORT = 47821;
@@ -146,6 +147,7 @@ async function start() {
     });
     mainWindow = createWindow(server.url);
     initUpdater(server.url);
+    initOllamaSetup(server.url);
   } catch (err) {
     dialog.showErrorBox("Ladderly could not start", err instanceof Error ? err.message : String(err));
     app.quit();

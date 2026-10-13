@@ -12,6 +12,9 @@ import {
   recommendOllamaModel,
 } from "@/lib/ai/models";
 import { updateAiSettings, useAiSettings } from "@/lib/ai/settingsStore";
+import { useIsDesktop } from "@/lib/desktop";
+import { BrowserModelPanel } from "./BrowserModelPanel";
+import { OllamaSetupCard } from "./OllamaSetupCard";
 
 type Props = { open: boolean; onClose: () => void; status: AiStatus | null; onRefreshStatus: () => void };
 
@@ -31,6 +34,7 @@ type PullState = { model: string; status: string; completed: number; total: numb
 export function AiSettingsDialog({ open, onClose, status, onRefreshStatus }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const settings = useAiSettings();
+  const isDesktop = useIsDesktop();
 
   useEffect(() => {
     const dialog = ref.current;
@@ -45,6 +49,7 @@ export function AiSettingsDialog({ open, onClose, status, onRefreshStatus }: Pro
   const options: { id: ProviderId; title: string; subtitle: string; hidden?: boolean }[] = [
     { id: "auto", title: "Claude (set up on this server)", subtitle: "Uses the API key configured for this app", hidden: status?.serverDefault !== "claude" },
     { id: "demo", title: "Free demo", subtitle: "Built-in sample paths, no setup" },
+    { id: "browser", title: "Open-source model in your browser", subtitle: "Free and private: runs on this device, no install", hidden: isDesktop },
     { id: "ollama", title: "Local open-source model", subtitle: "Free and private, runs on your computer (Ollama)" },
     { id: "anthropic", title: "Claude", subtitle: "Your Anthropic API key, best quality" },
     { id: "openai", title: "OpenAI GPT", subtitle: "Your OpenAI API key" },
@@ -117,6 +122,7 @@ export function AiSettingsDialog({ open, onClose, status, onRefreshStatus }: Pro
             general template. For a detailed path on any topic, use a local model or your own API key.
           </p>
         )}
+        {current === "browser" && <BrowserModelPanel />}
         {current === "ollama" && status?.local && <OllamaPanel status={status} onRefresh={onRefreshStatus} />}
         {current === "anthropic" && <AnthropicPanel hosted={status !== null && !status.local} />}
         {current === "openai" && <OpenAiPanel hosted={status !== null && !status.local} />}
@@ -159,6 +165,8 @@ function OllamaPanel({ status, onRefresh }: { status: AiStatus; onRefresh: () =>
   const [pull, setPull] = useState<PullState | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  /** A model to download as soon as Ollama is running (set by "Set up for me"). */
+  const autoPullRef = useRef<CatalogModel | null>(null);
 
   const ollama = status.ollama;
   const system = status.system;
@@ -216,6 +224,17 @@ function OllamaPanel({ status, onRefresh }: { status: AiStatus; onRefresh: () =>
     }
   }
 
+  // After "Set up for me": once Ollama is running, download the model it picked.
+  useEffect(() => {
+    const model = autoPullRef.current;
+    if (!model || !ollama?.reachable) return;
+    autoPullRef.current = null;
+    if (!installedNames.includes(model.id)) void download(model);
+    else updateAiSettings({ provider: "ollama", ollamaModel: model.id });
+    // `download` and `installedNames` are recreated each render; this should only react to Ollama coming up.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ollama?.reachable]);
+
   /**
    * Deletes a downloaded model (after confirmation) to free disk space.
    * @param {string} name The installed model's name.
@@ -236,6 +255,14 @@ function OllamaPanel({ status, onRefresh }: { status: AiStatus; onRefresh: () =>
 
   if (!ollama?.reachable) {
     return (
+      <div className="space-y-3">
+        <OllamaSetupCard
+          system={system}
+          onReady={(model) => {
+            autoPullRef.current = model;
+            onRefresh();
+          }}
+        />
       <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
         <p className="font-semibold">Ollama isn&apos;t running on this computer.</p>
         <ol className="mt-2 list-decimal space-y-1 pl-5">
@@ -252,6 +279,7 @@ function OllamaPanel({ status, onRefresh }: { status: AiStatus; onRefresh: () =>
         <button onClick={onRefresh} className="mt-3 rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-500">
           Refresh
         </button>
+      </div>
       </div>
     );
   }
