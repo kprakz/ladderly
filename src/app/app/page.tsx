@@ -11,6 +11,7 @@ import { NameDialog } from "@/components/NameDialog";
 import { PathForm } from "@/components/PathForm";
 import { PathView } from "@/components/PathView";
 import { ReadyPaths } from "@/components/ReadyPaths";
+import { ReadyTransitions } from "@/components/ReadyTransitions";
 import { findNextStep, type NextStep, ProgressDashboard } from "@/components/ProgressDashboard";
 import { OPEN_STAGE_EVENT } from "@/components/StageCard";
 import { CursorGlow } from "@/components/CursorGlow";
@@ -317,6 +318,9 @@ export default function Home() {
       </div>
       <div id="panel-transition" role="tabpanel" aria-labelledby="mode-transition" hidden={mode !== "transition"}>
         <TransitionForm onSubmit={(request) => generate(request)} disabled={status.kind === "loading"} onTopicChange={setTypedTopic} />
+        <div className="mt-4">
+          <ReadyTransitions onPick={(from, to) => void generate({ from, topic: to, goal: "job" }, true)} disabled={status.kind === "loading"} />
+        </div>
       </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_260px]">

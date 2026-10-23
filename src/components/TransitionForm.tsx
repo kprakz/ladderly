@@ -8,22 +8,9 @@ import { TopicRefusalNote } from "./TopicRefusalNote";
 const field =
   "rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-900";
 
-/** Career switches people often ask about; picking one fills in both boxes. */
-const POPULAR: [string, string][] = [
-  ["electronics engineer", "AI engineer"],
-  ["mechanical engineer", "data analyst"],
-  ["teacher", "instructional designer"],
-  ["accountant", "data analyst"],
-  ["sales executive", "product manager"],
-  ["graphic designer", "UX designer"],
-  ["customer support", "software tester"],
-  ["civil engineer", "project manager"],
-];
-
 /**
  * Ladderly's "Transition": the learner's current career and the one they want, then optional experience and weekly
- * time, then "Map my transition". Popular switches fill both boxes with one tap. Both careers go through the same
- * safety check as topics (lib/topic.ts).
+ * time, then "Map my transition". Both careers go through the same safety check as topics (lib/topic.ts).
  * @param {Object} props
  * @param {(req: PathRequest) => void} props.onSubmit Called with the request (`from` = current career, `topic` = target).
  * @param {boolean} props.disabled True while a path is being written.
@@ -69,19 +56,6 @@ export function TransitionForm({
     });
   }
 
-  /**
-   * Fills both boxes with a popular switch.
-   * @param {string} current The current career.
-   * @param {string} target The career to move into.
-   * @returns {void}
-   */
-  function pick(current: string, target: string) {
-    setFrom(current);
-    setTo(target);
-    setRefusal(null);
-    onTopicChange?.(target);
-  }
-
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[1fr_auto_1fr]">
@@ -115,22 +89,6 @@ export function TransitionForm({
             className={`${field} w-full py-3 text-base`}
           />
         </label>
-      </div>
-
-      <div>
-        <p className="text-xs text-zinc-500">Popular switches:</p>
-        <div className="mt-1.5 flex flex-wrap gap-1.5">
-          {POPULAR.map(([current, target]) => (
-            <button
-              key={`${current}-${target}`}
-              type="button"
-              onClick={() => pick(current, target)}
-              className="rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs first-letter:uppercase text-zinc-600 hover:border-indigo-400 hover:text-indigo-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:text-indigo-300"
-            >
-              {current} → {target}
-            </button>
-          ))}
-        </div>
       </div>
 
       {refusal && <TopicRefusalNote refusal={refusal} />}

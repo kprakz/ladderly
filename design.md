@@ -122,7 +122,7 @@ src/
 
 - A transition is a normal path request with `from` (current career) set; `topic` is the target career. `PathRequestSchema` cleans both with `careerFromText` (Grow topics use `skillFromTopic`), and `pathTitle` names it "from → topic".
 - The server adds `TRANSITION_NOTE` to the system prompt (`buildSystemPrompt(compact, true)`) and asks for `GeneratedTransitionSchema`: the usual path plus `transferableSkills` (2–5 `{ skill, use }`). Each engine takes the schema as `GenerateArgs.format` (Claude and OpenAI structured outputs, Ollama's JSON schema). `LearningPathSchema.transferableSkills` is optional, and `repairGeneratedPath` drops malformed entries.
-- Both careers go through `checkTopic` in the form and on the server. Web search uses "<from> to <topic> career transition roadmap skills <year>". The demo engine returns `getDemoTransition(from, to)`, a general 5-stage plan marked `isTemplate`.
+- Both careers go through `checkTopic` in the form and on the server. Web search uses "<from> to <topic> career transition roadmap skills <year>". The demo engine returns `getDemoTransition(from, to)`: a hand-written path from `findTransitionPath` when both careers match a sample's keywords (`demoTransitions.ts`, `demoTransitionsAi.ts`; most specific first, "any engineer" last), otherwise a general 5-stage plan marked `isTemplate`. The engineering → AI paths share three stages and differ in their bridge stage, domain project and what carries over. Quiz answers are placed by a hash of the question so they spread across A–D. `ReadyTransitions` opens them with `ready = true` (demo engine, whatever is selected); its catalogue lives in `readyTransitions.ts` so the page doesn't bundle the paths.
 
 ## 3. Request flow
 

@@ -184,7 +184,8 @@ src/
     globals.css         # Tailwind + class-based dark mode
   components/
     PathForm.tsx        # Grow: topic input and optional level / hours / goal
-    TransitionForm.tsx  # Transition: current and target careers, popular switches, experience and hours
+    TransitionForm.tsx  # Transition: current and target careers, experience and hours
+    ReadyTransitions.tsx # "Ready-made transitions" picker (one tap opens a hand-written switch)
     TopicRefusalNote.tsx # Explains a turned-down topic and offers safer ones
     PathView.tsx        # Summary, overall progress, timeline, finish line, pitfalls
     StageCard.tsx       # One fold-out stage: learn, practise, checklist, videos, quiz
@@ -234,6 +235,9 @@ src/
     demoIndia.ts        # CBSE/NCERT Class 11-12 demo paths (maths, physics, chemistry, biology, CS)
     demoIndiaVideos.ts  # Verified per-stage videos for the Class 11-12 paths
     readyPaths.ts       # The ready-made path catalogue for the picker
+    readyTransitions.ts # The ready-made transition catalogue for the picker
+    demoTransitionsAi.ts # Hand-written engineering → AI engineer (and → robotics) transitions
+    demoTransitions.ts  # Other hand-written transitions, and matching typed careers to them
     countVisit.ts       # Counts this browser once as a web learner
     spelling.ts         # "Did you mean…?" typo check for topics
     topic.ts            # Turns "How to learn Python?" into "Python", and turns down harmful topics

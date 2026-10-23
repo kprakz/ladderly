@@ -1,4 +1,5 @@
 import { INDIA_SAMPLES } from "./demoIndia";
+import { findTransitionPath } from "./demoTransitions";
 import { type NextTopic, suggestNextTopics } from "./nextTopics";
 import {
   genericExtras,
@@ -349,13 +350,16 @@ function genericPath(topic: string): LearningPath {
 }
 
 /**
- * The free demo's career transition plan ("Transition"): a general 5-stage plan built around the two careers. Like the
- * generic path it's marked as a template, since the details depend on the careers; an AI engine writes the specifics.
+ * The free demo's career transition plan ("Transition"): a hand-written path with videos, quizzes and courses when
+ * the two careers match one (see demoTransitions.ts), otherwise a general 5-stage plan built around them. The general
+ * plan is marked as a template, since the details depend on the careers; an AI engine writes the specifics.
  * @param {string} from The learner's current career.
  * @param {string} to The career they want.
  * @returns {LearningPath} A complete path that passes `LearningPathSchema`.
  */
 export function getDemoTransition(from: string, to: string): LearningPath {
+  const written = findTransitionPath(from, to);
+  if (written) return written;
   const f = from.trim();
   const t = to.trim();
   const path: LearningPath = {
