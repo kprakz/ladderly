@@ -1,6 +1,7 @@
 "use client";
 
 import { suggestNextTopics } from "@/lib/nextTopics";
+import { pathTitle } from "@/lib/schema";
 import { checkKey, progressOf, type SavedPath } from "@/lib/storage";
 import { Disclosure } from "./Disclosure";
 import { LearningLinks } from "./LearningLinks";
@@ -9,8 +10,9 @@ import { StageCard } from "./StageCard";
 import { WhatsNext } from "./WhatsNext";
 
 /**
- * A full learning path, kept calm: title, one-line summary and progress; videos and courses folded; the stages as
- * fold-out cards with only the current one open; then the final project and (folded) common pitfalls.
+ * A full learning path, kept calm: title, one-line summary and progress; for a career transition, what the learner
+ * already brings; videos and courses folded; the stages as fold-out cards with only the current one open; then the
+ * final project and (folded) common pitfalls.
  * @param {Object} props
  * @param {SavedPath} props.saved The saved path, including which checkpoint items are checked and quiz scores.
  * @param {(key: string) => void} props.onToggle Called with a checkpoint key when a checkbox changes.
@@ -38,7 +40,8 @@ export function PathView({
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-2xl font-bold capitalize">{request.topic}</h2>
+        {request.from && <p className="text-xs font-medium uppercase tracking-wide text-indigo-600 dark:text-indigo-400">🔀 Career transition</p>}
+        <h2 className="text-2xl font-bold capitalize">{pathTitle(request)}</h2>
         <p className="mt-1 text-zinc-600 dark:text-zinc-400">{path.summary}</p>
         <div className="mt-3 flex items-center gap-3">
           <ProgressBar percent={progress.percent} className="flex-1" />
@@ -48,8 +51,25 @@ export function PathView({
 
       {path.isTemplate && (
         <p role="note" className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-          This is a general plan. For a detailed plan on {request.topic}, pick another AI in ⚙️ Settings.
+          This is a general plan. For a detailed plan {request.from ? `for moving from ${request.from} to ${request.topic}` : `on ${request.topic}`}, pick
+          another AI in ⚙️ Settings.
         </p>
+      )}
+
+      {path.transferableSkills && path.transferableSkills.length > 0 && (
+        <section className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900 dark:bg-emerald-950/30">
+          <h3 className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+            🎒 What you already bring
+          </h3>
+          <ul className="mt-2 space-y-2">
+            {path.transferableSkills.map((t) => (
+              <li key={t.skill} className="text-sm">
+                <span className="font-medium">{t.skill}</span>
+                <span className="block text-zinc-600 dark:text-zinc-300">{t.use}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <LearningLinks path={path} topic={request.topic} />

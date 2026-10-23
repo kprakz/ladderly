@@ -3,7 +3,7 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
-import { GeneratedPathSchema } from "@/lib/schema";
+import { GeneratedPathSchema, GeneratedTransitionSchema } from "@/lib/schema";
 import { ollamaBaseUrl } from "./ollama";
 
 /**
@@ -11,10 +11,14 @@ import { ollamaBaseUrl } from "./ollama";
  * full text and how it stopped. They never log API keys.
  */
 
+/** The shape the AI must write: a learning path, or a career transition path. */
+export type PathFormat = typeof GeneratedPathSchema | typeof GeneratedTransitionSchema;
+
 /** What every engine needs to write a path. */
 export type GenerateArgs = {
   system: string;
   user: string;
+  format: PathFormat;
   signal: AbortSignal;
   onDelta: (text: string) => void;
 };
@@ -41,7 +45,7 @@ export async function generateWithClaude(apiKey: string, model: string, args: Ge
       max_tokens: 32000, // room for stages, quizzes and course picks
       // Effort isn't supported on Haiku 4.5; Opus 5 and Sonnet 5 use "medium" for a quick, structured task.
       output_config: {
-        format: betaZodOutputFormat(GeneratedPathSchema),
+        format: betaZodOutputFormat(args.format),
         ...(model === "claude-haiku-4-5" ? {} : { effort: "medium" as const }),
       },
       // On Opus 5, if a safety classifier declines, Anthropic retries on its recommended fallback model.
@@ -78,7 +82,7 @@ export async function generateWithOpenAI(apiKey: string, model: string, args: Ge
       model,
       instructions: args.system,
       input: args.user,
-      text: { format: zodTextFormat(GeneratedPathSchema, "learning_path") },
+      text: { format: zodTextFormat(args.format, "learning_path") },
       max_output_tokens: 32000,
       stream: true,
     },
@@ -102,12 +106,24 @@ export async function generateWithOpenAI(apiKey: string, model: string, args: Ge
   return { text, stop };
 }
 
-/** JSON Schema for Ollama's structured output, built once from the zod schema. */
-const OLLAMA_FORMAT = (() => {
-  const { $schema: _ignored, ...schema } = z.toJSONSchema(GeneratedPathSchema) as Record<string, unknown>;
-  void _ignored;
+/** JSON Schemas for Ollama's structured output, built once per format from the zod schemas. */
+const ollamaFormats = new Map<PathFormat, Record<string, unknown>>();
+
+/**
+ * The JSON Schema Ollama should follow for a format.
+ * @param {PathFormat} format The zod schema.
+ * @returns {Record<string, unknown>} The JSON Schema, without its `$schema` line.
+ */
+function ollamaFormat(format: PathFormat): Record<string, unknown> {
+  let schema = ollamaFormats.get(format);
+  if (!schema) {
+    const { $schema: _ignored, ...rest } = z.toJSONSchema(format) as Record<string, unknown>;
+    void _ignored;
+    schema = rest;
+    ollamaFormats.set(format, schema);
+  }
   return schema;
-})();
+}
 
 /**
  * Writes a path with a local open-source model through Ollama, streaming structured JSON.
@@ -124,7 +140,7 @@ export async function generateWithOllama(model: string, args: GenerateArgs): Pro
       body: JSON.stringify({
         model,
         stream: true,
-        format: OLLAMA_FORMAT,
+        format: ollamaFormat(args.format),
         think: false, // faster; "thinking" models otherwise spend minutes reasoning on a CPU
         options: { temperature: 0.4, num_ctx: 8192, num_predict: 7000 },
         messages: [

@@ -6,6 +6,13 @@ const LEVELS = {
   intermediate: "an intermediate learner",
 } as const;
 
+/** For a career transition, "level" is their experience with the new career so far. */
+const EXPERIENCE = {
+  none: "none yet",
+  some: "a little (some courses or side projects)",
+  intermediate: "solid (has done real work with it, but not as their job)",
+} as const;
+
 const GOALS = {
   hobby: "learning for fun as a hobby",
   job: "aiming to use it professionally in a job",
@@ -30,11 +37,19 @@ Guidelines:
 - If the topic is not a learnable skill, still do your best to interpret it as one.`;
 
 /**
- * Builds the user message sent to Claude from the form input.
- * @param {PathRequest} req The validated request: topic plus optional level, hours per week and goal.
+ * Builds the user message sent to the AI from the form input.
+ * @param {PathRequest} req The validated request: topic (and, for a career transition, the current career) plus
+ *   optional level, hours per week and goal.
  * @returns {string} A short multi-line prompt describing the learner and asking for the path.
  */
 export function buildUserPrompt(req: PathRequest): string {
+  if (req.from) {
+    const lines = [`Current career: ${req.from}`, `Career they want: ${req.topic}`];
+    if (req.level) lines.push(`Experience with ${req.topic} so far: ${EXPERIENCE[req.level]}`);
+    if (req.hoursPerWeek) lines.push(`Time available: about ${req.hoursPerWeek} hours per week`);
+    lines.push("", `Create the career transition path from ${req.from} to ${req.topic}. The 3 next topics must help them grow in ${req.topic}.`);
+    return lines.join("\n");
+  }
   const lines = [`Skill: ${req.topic}`];
   if (req.level) lines.push(`Learner: ${LEVELS[req.level]}`);
   if (req.hoursPerWeek) lines.push(`Time available: about ${req.hoursPerWeek} hours per week`);
@@ -45,13 +60,29 @@ export function buildUserPrompt(req: PathRequest): string {
 
 /** Extra instruction for slower local models, so a path finishes in reasonable time on a laptop. */
 const COMPACT_NOTE = `
-- Keep it compact so it generates quickly: exactly 4 stages, 3-4 concepts and 2 checkpoints per stage, 1 practice task per stage, exactly 2 quiz questions per stage, 3 courses and 3 next topics. Stay just as specific.`;
+- Keep it compact so it generates quickly: exactly 4 stages, 3-4 concepts and 2 checkpoints per stage, 1 practice task per stage, exactly 2 quiz questions per stage, 3 courses and 3 next topics (and 3 transferable skills for a career transition). Stay just as specific.`;
+
+/** Extra guidelines for a career transition ("Transition"): the path starts from the learner's current career. */
+const TRANSITION_NOTE = `
+
+This is a career transition: the learner already works in one career and wants to move into another. Write the path from where they already are.
+- Don't re-teach what their current career already gave them. Spend the time on the gaps between the two careers, most important first.
+- "transferableSkills": 3-5 specific skills or knowledge from the current career that carry over (never generic traits like "hard work"), each with one sentence on how it's used in the new career. Even very different careers share something real (domain knowledge, tools, maths, working with clients); name it specifically.
+- The first stage bridges the biggest gap for someone with this background. The middle stages build the core skills the new role is hired for, as it's practised today.
+- At least one practice task is a project that combines their old field with the new one (e.g. an electronics engineer training a model on sensor data), because that domain knowledge is their advantage.
+- The last stage makes them job-ready: a portfolio of 2-3 projects, rewriting their CV and LinkedIn to tell the switch as a story, the interview format for this role (e.g. coding rounds, case studies, take-home tasks), and realistic ways to land the first role (an internal move, an adjacent or hybrid role, freelancing, open source).
+- Durations assume they're learning alongside a full-time job unless the weekly time says otherwise.
+- The finish line is the milestone that proves they're ready to apply, e.g. a portfolio project a hiring manager could review.
+- "pitfalls" are mistakes people make in this particular transition.
+- "nextTopics" are skills to grow in the new career (deeper, neighbouring, applied).
+- If either career isn't a real job, interpret it as the closest one.`;
 
 /**
- * The system prompt for a given engine.
+ * The system prompt for a given engine and kind of path.
  * @param {boolean} compact True for local models: asks for a shorter (but equally specific) path.
+ * @param {boolean} [transition] True for a career transition.
  * @returns {string} The system prompt.
  */
-export function buildSystemPrompt(compact: boolean): string {
-  return compact ? SYSTEM_PROMPT + COMPACT_NOTE : SYSTEM_PROMPT;
+export function buildSystemPrompt(compact: boolean, transition = false): string {
+  return SYSTEM_PROMPT + (transition ? TRANSITION_NOTE : "") + (compact ? COMPACT_NOTE : "");
 }

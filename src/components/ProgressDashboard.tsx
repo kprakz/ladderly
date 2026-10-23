@@ -4,6 +4,7 @@ import { useState } from "react";
 import { BADGES, earnedBadgeIds } from "@/lib/badges";
 import { addDays, type DayKey, fromDayKey } from "@/lib/dates";
 import { type Profile, updateProfile } from "@/lib/profile";
+import { pathTitle } from "@/lib/schema";
 import { checkKey, type SavedPath } from "@/lib/storage";
 import { type ActivityDays, DAYS_PER_REST_DAY, MAX_REST_DAYS, type StreakStats } from "@/lib/streaks";
 import { ActivityHeatmap } from "./ActivityHeatmap";
@@ -131,7 +132,7 @@ function NextStepCard({ next, onTick, onOpen }: { next: NextStep; onTick: (s: Ne
     <div className={`${card} flex flex-col gap-3 p-4 sm:flex-row sm:items-center`}>
       <div className="min-w-0 flex-1">
         <p className="text-xs text-zinc-500">
-          Next step · <span className="capitalize">{next.path.request.topic}</span>, stage {next.stageIndex + 1}
+          Next step · <span className="capitalize">{pathTitle(next.path.request)}</span>, stage {next.stageIndex + 1}
         </p>
         <p className="mt-0.5 font-medium">{next.text}</p>
       </div>

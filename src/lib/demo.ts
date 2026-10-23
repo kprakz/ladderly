@@ -349,6 +349,117 @@ function genericPath(topic: string): LearningPath {
 }
 
 /**
+ * The free demo's career transition plan ("Transition"): a general 5-stage plan built around the two careers. Like the
+ * generic path it's marked as a template, since the details depend on the careers; an AI engine writes the specifics.
+ * @param {string} from The learner's current career.
+ * @param {string} to The career they want.
+ * @returns {LearningPath} A complete path that passes `LearningPathSchema`.
+ */
+export function getDemoTransition(from: string, to: string): LearningPath {
+  const f = from.trim();
+  const t = to.trim();
+  const path: LearningPath = {
+    summary: `Move from ${f} to ${t}: close the skill gap, prove it with projects, and land your first ${t} role.`,
+    isTemplate: true,
+    transferableSkills: [
+      { skill: `Domain knowledge from ${f} work`, use: `Lets you solve ${t} problems in the field you already know, better than someone starting from scratch.` },
+      { skill: "Professional experience: deadlines, teamwork and explaining your work", use: `Valued in every ${t} team, and something new graduates don't have yet.` },
+      { skill: "Learning new tools on the job", use: "You've done it before in your current work; the same habit gets you through the new tools." },
+    ],
+    stages: [
+      {
+        title: `Map the gap from ${f} to ${t}`,
+        duration: "1–2 weeks",
+        concepts: [
+          `What a ${t} does day to day: the tasks, tools and deliverables in real job posts`,
+          `Your transferable skills: what from ${f} already counts`,
+          "Your gap list: the skills you'd be hired for that you don't have yet, most-asked-for first",
+          "A realistic plan around your current job and weekly hours",
+        ],
+        practice: [`Read 10 ${t} job posts and list every skill and tool they ask for; mark each one "have", "partly" or "missing"`],
+        checkpoint: ["You have a ranked list of the skills you're missing", "You can describe a typical week in the new role in your own words"],
+        resources: ["job posts for the role on LinkedIn or Naukri", `"day in the life" interviews with people in ${t} roles`],
+      },
+      {
+        title: `${t} foundations`,
+        duration: "4–6 weeks",
+        concepts: [
+          "The core tools and methods from the top of your gap list",
+          "The vocabulary you need to follow conversations with people in the role",
+          "Small, complete exercises instead of long theory",
+        ],
+        practice: ["Finish a beginner course in the most-asked-for skill on your list, including every exercise"],
+        checkpoint: ["Complete a beginner exercise in each core tool without a guide", "Explain the top 3 skills on your gap list to a friend"],
+        resources: ["a structured beginner course", "the official documentation for the main tools"],
+      },
+      {
+        title: `Bridge project: ${f} meets ${t}`,
+        duration: "3–4 weeks",
+        concepts: [
+          `Choosing a real problem you know from ${f}`,
+          `Solving it with ${t} methods and tools`,
+          "Writing it up: the problem, your approach, the result and what you'd improve",
+        ],
+        practice: [`Build one project that uses ${t} skills on a problem from ${f}, and publish the write-up`],
+        checkpoint: ["The project works end to end and someone else can follow your write-up", `You can explain why your ${f} background helped`],
+        resources: ["example projects from people in the role", "a community forum where you can ask for feedback"],
+      },
+      {
+        title: "Build your portfolio",
+        duration: "4–6 weeks",
+        concepts: [
+          `Two more projects that show the skills ${t} job posts ask for most`,
+          `Getting feedback from people working in ${t} roles`,
+          "Real-world experience: open source, freelancing or helping a small team",
+        ],
+        practice: [`Ask two people in ${t} roles to review your projects and act on their feedback`],
+        checkpoint: ["You have 3 projects you're proud to show", "Each project has a clear write-up and a link"],
+        resources: ["professional communities and meetups", "portfolio examples from people who made the same switch"],
+      },
+      {
+        title: "Get job-ready",
+        duration: "3–4 weeks",
+        concepts: [
+          `Rewriting your CV and LinkedIn to tell your switch from ${f} as a story`,
+          `How ${t} interviews work and how to prepare for them`,
+          "Ways in: an internal move, an adjacent or hybrid role, referrals, freelancing",
+        ],
+        practice: [`Talk to 5 people in ${t} roles about how they got their first one`, "Do 3 practice interviews and note what to improve"],
+        checkpoint: ["Your CV and LinkedIn show your new skills and projects first", "You've applied to your first 10 roles"],
+        resources: ["interview question collections for the role", "career-switch stories from people in the field"],
+      },
+    ],
+    finishLine: {
+      name: "Ready to apply",
+      description: `A portfolio of 3 projects, including one that brings your ${f} experience into ${t}, a CV that tells your switch, and your first applications sent.`,
+    },
+    pitfalls: [
+      "Collecting certificates instead of building projects",
+      `Hiding your ${f} background instead of using it as your advantage`,
+      "Waiting until you feel 100% ready before applying",
+    ],
+  };
+  return {
+    ...withExtras(path, {
+      stages: [
+        { videoSearch: `${t} day in the life` },
+        { videoSearch: `${t} for beginners` },
+        { videoSearch: `${f} to ${t} project ideas` },
+        { videoSearch: `${t} portfolio projects` },
+        { videoSearch: `${t} interview preparation` },
+      ],
+      courses: [
+        { platform: "youtube", query: `${f} to ${t} career switch`, note: "stories and advice from people who switched" },
+        { platform: "coursera", query: t, note: "professional certificates, often free to audit" },
+        { platform: "linkedin", query: t, note: "short courses on the role's tools and skills" },
+        { platform: "udemy", query: t, note: "structured paid courses with lifetime access" },
+      ],
+    }),
+    nextTopics: suggestNextTopics(t),
+  };
+}
+
+/**
  * Picks the demo path for a topic: a hand-written sample if a keyword matches, otherwise the generic template.
  * Either way it includes video searches, quizzes, course links and next-topic suggestions (plus verified featured
  * links for samples).

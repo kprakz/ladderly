@@ -118,6 +118,12 @@ src/
 
 - **Ollama setup in the desktop app** (`electron/ollamaSetup.js`, `electron/signature.js`): mirrors Ollama's own `scripts/install.ps1`: downloads `https://ollama.com/download/OllamaSetup.exe` (≈1.6 GB; ≈2.8 GB installed), verifies it with `Get-AuthenticodeSignature` (status `Valid` and certificate organisation exactly `O=Ollama Inc.`), writes the `%LOCALAPPDATA%\Ollama\upgraded` marker so Ollama starts hidden, runs it with `/VERYSILENT /NORESTART /SUPPRESSMSGBOXES`, checks the exit code, deletes the installer, and waits for `http://127.0.0.1:11434/api/version`. If Ollama is installed but stopped it launches `ollama app.exe`; if it's already running it does nothing. Progress goes to the window over `ollama:setup` IPC events; `ollama:setup:get/install` only answer the local server's origin. `OllamaSetupCard` shows sizes and steps, then `OllamaPanel` downloads the recommended model once Ollama reports in. Unpackaged builds accept `LADDERLY_OLLAMA_INSTALLER_URL` and `LADDERLY_TEST_OLLAMA_URL` for tests.
 
+## 2.8 Career transitions ("Transition")
+
+- A transition is a normal path request with `from` (current career) set; `topic` is the target career. `PathRequestSchema` cleans both with `careerFromText` (Grow topics use `skillFromTopic`), and `pathTitle` names it "from → topic".
+- The server adds `TRANSITION_NOTE` to the system prompt (`buildSystemPrompt(compact, true)`) and asks for `GeneratedTransitionSchema`: the usual path plus `transferableSkills` (2–5 `{ skill, use }`). Each engine takes the schema as `GenerateArgs.format` (Claude and OpenAI structured outputs, Ollama's JSON schema). `LearningPathSchema.transferableSkills` is optional, and `repairGeneratedPath` drops malformed entries.
+- Both careers go through `checkTopic` in the form and on the server. Web search uses "<from> to <topic> career transition roadmap skills <year>". The demo engine returns `getDemoTransition(from, to)`, a general 5-stage plan marked `isTemplate`.
+
 ## 3. Request flow
 
 ```mermaid

@@ -1,7 +1,16 @@
 import { AiSettingsSchema, type AiSettings } from "@/lib/ai/models";
-import { getDemoPath, isDemoMode } from "@/lib/demo";
+import { getDemoPath, getDemoTransition, isDemoMode } from "@/lib/demo";
 import { buildSystemPrompt, buildUserPrompt } from "@/lib/prompt";
-import { type LearningPath, LearningPathSchema, type PathRequest, PathRequestSchema, repairGeneratedPath, type StreamEvent } from "@/lib/schema";
+import {
+  GeneratedPathSchema,
+  GeneratedTransitionSchema,
+  type LearningPath,
+  LearningPathSchema,
+  type PathRequest,
+  PathRequestSchema,
+  repairGeneratedPath,
+  type StreamEvent,
+} from "@/lib/schema";
 import { checkTopic } from "@/lib/topic";
 import {
   describeLlmError,
@@ -36,7 +45,7 @@ export async function POST(req: Request): Promise<Response> {
     return Response.json({ error: parsed.error.issues[0]?.message ?? "Invalid request" }, { status: 400 });
   }
   // Turned down here too, whatever the engine, in case a request skips the form's check.
-  const refusal = checkTopic(String(body?.topic ?? ""));
+  const refusal = checkTopic(String(body?.topic ?? "")) ?? (body?.from ? checkTopic(String(body.from)) : null);
   if (refusal) return Response.json({ error: refusal.message }, { status: 400 });
   const ai = AiSettingsSchema.safeParse(body?.ai ?? {});
   if (!ai.success) return Response.json({ error: "Invalid AI settings. Open AI settings and check them." }, { status: 400 });
@@ -60,9 +69,11 @@ export async function POST(req: Request): Promise<Response> {
 
       try {
         const results = await runSearch(search, parsed.data, send, req.signal);
+        const transition = Boolean(parsed.data.from);
         const { text, stop } = await engine.run({
-          system: buildSystemPrompt(engine.compact),
+          system: buildSystemPrompt(engine.compact, transition),
           user: buildUserPrompt(parsed.data) + webContext(results),
+          format: transition ? GeneratedTransitionSchema : GeneratedPathSchema,
           signal: req.signal,
           onDelta: (t) => send({ type: "delta", text: t }),
         });
@@ -202,13 +213,13 @@ function sleep(ms: number): Promise<void> {
 /**
  * Demo mode: streams a sample path in small chunks so the loading preview behaves like the real thing. With web
  * search on, it also searches and attaches real, current links to the sample.
- * @param {PathRequest} request The request; its topic picks the sample.
+ * @param {PathRequest} request The request; its topic picks the sample (a career transition gets the transition plan).
  * @param {SearchSetup} search The web search setup, or `null`.
  * @param {AbortSignal} signal The request's abort signal.
  * @returns {Response} A streaming NDJSON response ending in a `done` event.
  */
 function demoResponse(request: PathRequest, search: SearchSetup, signal: AbortSignal): Response {
-  const base = LearningPathSchema.parse(getDemoPath(request.topic));
+  const base = LearningPathSchema.parse(request.from ? getDemoTransition(request.from, request.topic) : getDemoPath(request.topic));
   const stream = new ReadableStream({
     async start(controller) {
       /**

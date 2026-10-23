@@ -17,6 +17,7 @@ import { CursorGlow } from "@/components/CursorGlow";
 import { ShootingStars } from "@/components/ShootingStars";
 import { ErrorPanel, LoadingPanel } from "@/components/StatusPanels";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { TransitionForm } from "@/components/TransitionForm";
 import { TopicBackground } from "@/components/TopicBackground";
 import { UpdateBanner } from "@/components/UpdateBanner";
 import { Toaster } from "@/components/Toaster";
@@ -30,10 +31,18 @@ import { useCountVisit } from "@/lib/countVisit";
 import { dayKey } from "@/lib/dates";
 import { generatePath } from "@/lib/generate";
 import { isReturningVisit, useProfile } from "@/lib/profile";
-import type { PathRequest } from "@/lib/schema";
+import { type PathRequest, pathTitle } from "@/lib/schema";
 import { checkKey, updatePaths, useSavedPaths, type SavedPath } from "@/lib/storage";
 import { computeStreak } from "@/lib/streaks";
 import { DEFAULT_THEME, matchTopicTheme } from "@/lib/topicTheme";
+
+/** Ladderly's two ways in: learn a skill ("Grow") or move to a new career ("Transition"). */
+type Mode = "grow" | "transition";
+
+const MODES: { id: Mode; icon: string; label: string; hint: string }[] = [
+  { id: "grow", icon: "🌱", label: "Grow", hint: "Learn a new skill, step by step." },
+  { id: "transition", icon: "🔀", label: "Transition", hint: "Move from your current career to a new one." },
+];
 
 type Status = { kind: "idle" } | { kind: "loading"; partial: string; note?: string; ready?: boolean } | { kind: "error"; message: string };
 
@@ -66,6 +75,7 @@ export default function Home() {
   // Show the selected path, falling back to the most recent one.
   const active = paths.find((p) => p.id === activeId) ?? paths[0];
   const next = findNextStep(paths, active?.id ?? null);
+  const [mode, setMode] = useState<Mode>("grow");
   const [typedTopic, setTypedTopic] = useState("");
   // The background follows what's being typed (once it's recognised), otherwise the path on screen.
   const backgroundTheme = matchTopicTheme(typedTopic) ?? (active && matchTopicTheme(active.request.topic)) ?? DEFAULT_THEME;
@@ -178,14 +188,15 @@ export default function Home() {
 
   /**
    * Starts a path for a suggested next topic. The learner has just finished a related path, so it assumes some
-   * prior exposure and keeps their weekly time and goal. Scrolls up to show the progress.
+   * prior exposure and keeps their weekly time and goal (after a career transition, the goal is their job). Scrolls
+   * up to show the progress.
    * @param {string} topic The suggested topic.
    * @returns {void}
    */
   function startNextTopic(topic: string) {
     if (!active) return;
     window.scrollTo({ top: 0, behavior: "smooth" });
-    void generate({ topic, level: "some", hoursPerWeek: active.request.hoursPerWeek, goal: active.request.goal });
+    void generate({ topic, level: "some", hoursPerWeek: active.request.hoursPerWeek, goal: active.request.from ? "job" : active.request.goal });
   }
 
   /**
@@ -272,15 +283,46 @@ export default function Home() {
         />
       )}
 
-      <PathForm onSubmit={(request) => generate(request)} disabled={status.kind === "loading"} onTopicChange={setTypedTopic} />
-      <div className="mt-4">
-        <ReadyPaths onPick={(topic) => void generate({ topic }, true)} disabled={status.kind === "loading"} />
+      <div className="mb-3 flex flex-col items-center gap-1.5">
+        <div role="tablist" aria-label="What would you like to do?" className="inline-flex rounded-xl border border-zinc-200 bg-white/80 p-1 shadow-sm backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80">
+          {MODES.map((m) => (
+            <button
+              key={m.id}
+              id={`mode-${m.id}`}
+              role="tab"
+              type="button"
+              aria-selected={mode === m.id}
+              aria-controls={`panel-${m.id}`}
+              onClick={() => {
+                setMode(m.id);
+                setTypedTopic("");
+              }}
+              className={`flex items-center gap-1.5 rounded-lg px-5 py-2 text-sm font-medium transition ${
+                mode === m.id ? "bg-indigo-600 text-white shadow" : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              }`}
+            >
+              <span aria-hidden="true">{m.icon}</span>
+              {m.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-zinc-500">{MODES.find((m) => m.id === mode)?.hint}</p>
+      </div>
+      {/* Both stay mounted, so switching tabs keeps what was typed. */}
+      <div id="panel-grow" role="tabpanel" aria-labelledby="mode-grow" hidden={mode !== "grow"}>
+        <PathForm onSubmit={(request) => generate(request)} disabled={status.kind === "loading"} onTopicChange={setTypedTopic} />
+        <div className="mt-4">
+          <ReadyPaths onPick={(topic) => void generate({ topic }, true)} disabled={status.kind === "loading"} />
+        </div>
+      </div>
+      <div id="panel-transition" role="tabpanel" aria-labelledby="mode-transition" hidden={mode !== "transition"}>
+        <TransitionForm onSubmit={(request) => generate(request)} disabled={status.kind === "loading"} onTopicChange={setTypedTopic} />
       </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_260px]">
         <main className="min-w-0 space-y-6">
           {status.kind === "loading" && lastRequest && <LoadingPanel
-              topic={lastRequest.topic}
+              topic={pathTitle(lastRequest)}
               partial={status.partial}
               note={status.note}
               engine={status.ready ? "Ladderly's ready-made paths" : engine}
@@ -300,7 +342,15 @@ export default function Home() {
           )}
           {status.kind === "idle" && !active && loaded && (
             <p className="py-10 text-center text-zinc-500">
-              Type something you want to learn, like <em>class 12 physics</em>, <em>guitar</em> or <em>python</em>, and get a step-by-step plan.
+              {mode === "grow" ? (
+                <>
+                  Type something you want to learn, like <em>class 12 physics</em>, <em>guitar</em> or <em>python</em>, and get a step-by-step plan.
+                </>
+              ) : (
+                <>
+                  Tell Ladderly your current career and the one you want, like <em>electronics engineer → AI engineer</em>, and get a step-by-step plan to make the switch.
+                </>
+              )}
             </p>
           )}
         </main>

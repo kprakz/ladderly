@@ -74,9 +74,11 @@ export function tidyResults(results: WebResult[]): WebResult[] {
  * The search words for a path request, aimed at current, structured learning material.
  * @param {PathRequest} req The path request.
  * @param {number} [year] The current year (passed in for testing).
- * @returns {string} e.g. "chess learning roadmap 2026" or "class 12 physics syllabus exam preparation 2026".
+ * @returns {string} e.g. "chess learning roadmap 2026", "class 12 physics syllabus exam preparation 2026" or
+ *   "electronics engineer to AI engineer career transition roadmap skills 2026".
  */
 export function searchQuery(req: PathRequest, year = new Date().getFullYear()): string {
+  if (req.from) return `${req.from} to ${req.topic} career transition roadmap skills ${year}`;
   const focus = req.goal === "exam" ? "syllabus exam preparation" : req.goal === "job" ? "skills roadmap for jobs" : "learning roadmap";
   return `${req.topic} ${focus} ${year}`;
 }

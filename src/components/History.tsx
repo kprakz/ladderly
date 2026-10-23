@@ -1,5 +1,6 @@
 "use client";
 
+import { pathTitle } from "@/lib/schema";
 import { progressOf, type SavedPath } from "@/lib/storage";
 import { ProgressBar } from "./ProgressBar";
 
@@ -39,7 +40,10 @@ export function History({ paths, activeId, onSelect, onDelete }: Props) {
                   : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
               }`}
             >
-              <span className="block truncate text-sm font-medium capitalize">{p.request.topic}</span>
+              <span className="block truncate text-sm font-medium capitalize" title={pathTitle(p.request)}>
+                {p.request.from && <span aria-label="Career transition: ">🔀 </span>}
+                {pathTitle(p.request)}
+              </span>
               <span className="mt-0.5 block text-xs text-zinc-500">
                 {new Date(p.createdAt).toLocaleDateString()} · {percent}%
               </span>
@@ -47,9 +51,9 @@ export function History({ paths, activeId, onSelect, onDelete }: Props) {
             </button>
             <button
               onClick={() => {
-                if (confirm(`Delete the path for "${p.request.topic}"?`)) onDelete(p.id);
+                if (confirm(`Delete the path for "${pathTitle(p.request)}"?`)) onDelete(p.id);
               }}
-              aria-label={`Delete ${p.request.topic}`}
+              aria-label={`Delete ${pathTitle(p.request)}`}
               className="absolute right-2 top-2 rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 dark:hover:bg-zinc-800"
             >
               ✕

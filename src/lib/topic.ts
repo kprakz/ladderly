@@ -12,10 +12,18 @@ const LEADING = [
   /^how to /,
   /^(?:the )?(?:best|fastest|easiest|quickest) (?:way|ways) to /,
   /^(?:a |an |the )?(?:complete |full |beginner'?s'? |step by step )?(?:roadmap|guide|path|plan|course|tutorial|introduction|intro)s? (?:to|for|on|of|in) /,
-  /^(?:start|starting|begin|beginning|get started|getting started|start learning) (?:with |on |in )?/,
-  /^(?:learn|learning|study|studying|master|mastering|get better at|getting better at|improve at|improve my|get into|getting into|understand) /,
+  /^(?:get started|getting started|start learning) (?:with |on |in )?/,
+  /^learn /,
   /^(?:about |the basics of |basics of |the fundamentals of |fundamentals of )/,
   /^(?:the |a |an )/,
+];
+/**
+ * Verbs that are only extra words after a phrase like "how to" or "I want to": "How to master chess" → "chess", but
+ * "Master chef", "Learning designer" and "Study skills" are skills in their own right.
+ */
+const AFTER_PHRASE = [
+  /^(?:start|starting|begin|beginning) (?:with |on |in )?/,
+  /^(?:learning|study|studying|master|mastering|get better at|getting better at|improve at|improve my|get into|getting into|understand) /,
 ];
 const TRAILING = [
   / (?:from scratch|from zero|step by step|for free|online|at home|on my own|by myself|by yourself|quickly|fast|easily|properly|effectively|in \d+ (?:days|weeks|months))$/,
@@ -34,13 +42,14 @@ export function skillFromTopic(text: string): string {
   let skill = original.replace(/[?!.]+$/, "").trim();
   // Apply the patterns to a lowercase copy and cut the same number of characters from the original, so "How to learn
   // JavaScript" keeps "JavaScript" as typed.
+  let stripped = false;
   for (let changed = true; changed; ) {
     changed = false;
-    for (const pattern of LEADING) {
+    for (const pattern of stripped ? [...LEADING, ...AFTER_PHRASE] : LEADING) {
       const match = skill.toLowerCase().match(pattern);
       if (match && match[0].length < skill.length) {
         skill = skill.slice(match[0].length).trim();
-        changed = true;
+        changed = stripped = true;
       }
     }
     for (const pattern of TRAILING) {
@@ -52,6 +61,48 @@ export function skillFromTopic(text: string): string {
     }
   }
   return skill.length >= 1 ? skill : original;
+}
+
+/** Phrases around a career that aren't part of its name, e.g. "I'm currently working as a" or "become an". */
+const CAREER_LEADING = [
+  /^(?:i want to|i'd like to|i would like to|i wanna|i plan to|i'm planning to|i am planning to|how (?:do|can) i|how to|help me|i want|i'd like|looking to|planning to|trying to|want to)\s+/,
+  /^(?:i am|i'm|im|currently|presently|now|right now|at the moment|working|i work|i've been working|i have been working|been working|i was|formerly|previously)\s+/,
+  /^(?:as|in|into|to|from|towards?)\s+/,
+  /^(?:become|becoming|be|get|getting|land|landing|switch|switching|transition|transitioning|move|moving|change|changing|shift|shifting|pivot|pivoting|break|breaking)\s+(?:(?:into|to|an|as|a)\s+)?/,
+  /^(?:a|an|the)\s+(?:career|job|role|position)\s+(?:as|in)\s+/,
+  /^(?:my )?(?:career|job|role|position)\s+(?:as|in)\s+/,
+  /^(?:a|an|the|my)\s+/,
+];
+const CAREER_TRAILING = [/\s+(?:role|roles|job|jobs|career|position|field|profession|by profession|for \d+ years|with \d+ years.*)$/];
+
+/**
+ * The career inside what was typed: "I'm an electronics engineer" → "electronics engineer", "I want to become an AI
+ * engineer" → "AI engineer", "Switch to data science" → "data science". Anything else is returned as typed (trimmed);
+ * if removing the extra words would leave nothing, the original is kept.
+ * @param {string} text What the learner typed.
+ * @returns {string} The career, in the learner's own capitalisation.
+ */
+export function careerFromText(text: string): string {
+  const original = text.trim().replace(/\s+/g, " ");
+  let career = original.replace(/[?!.]+$/, "").trim();
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (const pattern of CAREER_LEADING) {
+      const match = career.toLowerCase().match(pattern);
+      if (match && match[0].length < career.length) {
+        career = career.slice(match[0].length).trim();
+        changed = true;
+      }
+    }
+    for (const pattern of CAREER_TRAILING) {
+      const match = career.toLowerCase().match(pattern);
+      if (match && match.index) {
+        career = career.slice(0, match.index).trim();
+        changed = true;
+      }
+    }
+  }
+  return career.length >= 2 ? career : original;
 }
 
 /** Why a topic was turned down, what to tell the learner, and safer topics to offer instead. */

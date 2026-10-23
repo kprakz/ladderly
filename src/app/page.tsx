@@ -27,6 +27,7 @@ const STEPS = [
 
 const FEATURES = [
   { icon: "🪜", title: "Step-by-step paths", text: "Each stage tells you what to learn, what to practise and when you're ready to move on, with a simple checklist." },
+  { icon: "🔀", title: "Career transitions", text: "Changing careers? Tell Ladderly what you do now and what you want to become, like electronics engineer → AI engineer. Your path starts from the skills you already have and ends job-ready." },
   { icon: "▶️", title: "Videos for every week", text: "Hand-picked videos in a scrolling row with hover previews, plus free and paid courses from trusted platforms." },
   { icon: "🎯", title: "Quizzes that unlock", text: "Finish a stage's checklist to unlock a short quiz. Every answer comes with an explanation, and your best score is saved." },
   { icon: "🔥", title: "Streaks and rest days", text: "Learn a little each day to grow your streak. Every 7 days in a row earns a ❄️ rest day that protects it when life gets busy." },
@@ -98,8 +99,8 @@ export default function Home() {
           </div>
           <p className="mt-3 text-lg font-medium text-zinc-500 dark:text-zinc-400">The first step towards you</p>
           <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-zinc-700 dark:text-zinc-300">
-            Type any skill and get a clear, step-by-step path from zero to confident, with videos, courses, quizzes and
-            streaks to keep you climbing. Free and open source.
+            Type any skill, or the career you want to move into, and get a clear, step-by-step path from zero to
+            confident, with videos, courses, quizzes and streaks to keep you climbing. Free and open source.
           </p>
           <DownloadButtons />
           <AuthorNote />

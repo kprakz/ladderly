@@ -1,16 +1,34 @@
 import { z } from "zod";
 import { PLATFORM_IDS } from "./platforms";
-import { skillFromTopic } from "./topic";
+import { careerFromText, skillFromTopic } from "./topic";
 
-/** What the browser sends to /api/path. The topic becomes the skill itself: "How to learn Python?" → "Python". */
-export const PathRequestSchema = z.object({
-  topic: z.string().trim().min(1, "Enter a skill or topic").max(120).transform(skillFromTopic),
-  level: z.enum(["none", "some", "intermediate"]).optional(),
-  hoursPerWeek: z.number().int().min(1).max(80).optional(),
-  goal: z.enum(["hobby", "job", "exam"]).optional(),
-});
+/**
+ * What the browser sends to /api/path. The topic becomes the skill itself: "How to learn Python?" → "Python".
+ * With `from`, it's a career transition (Ladderly's "Transition"): `from` is the learner's current career and
+ * `topic` the career they want ("I want to become an AI engineer" → "AI engineer").
+ */
+export const PathRequestSchema = z
+  .object({
+    topic: z.string().trim().min(1, "Enter a skill or topic").max(120),
+    from: z.string().trim().min(1, "Enter your current career").max(80).optional(),
+    level: z.enum(["none", "some", "intermediate"]).optional(),
+    hoursPerWeek: z.number().int().min(1).max(80).optional(),
+    goal: z.enum(["hobby", "job", "exam"]).optional(),
+  })
+  .transform((req) =>
+    req.from ? { ...req, from: careerFromText(req.from), topic: careerFromText(req.topic) } : { ...req, topic: skillFromTopic(req.topic) },
+  );
 
 export type PathRequest = z.infer<typeof PathRequestSchema>;
+
+/**
+ * A path's name: the skill ("Python"), or for a career transition "Electronics engineer → AI engineer".
+ * @param {Pick<PathRequest, "topic" | "from">} request The path's request.
+ * @returns {string} The name to show.
+ */
+export function pathTitle(request: Pick<PathRequest, "topic" | "from">): string {
+  return request.from ? `${request.from} → ${request.topic}` : request.topic;
+}
 
 /** A multiple-choice question for a stage's quiz. */
 export const QuizQuestionSchema = z.object({
@@ -31,6 +49,12 @@ export const CourseLinkSchema = z.object({
 export const NextTopicSchema = z.object({
   topic: z.string().min(2).max(60).describe("A short skill name someone could type to start a new path, e.g. 'Music theory'"),
   why: z.string().min(5).max(200).describe("One sentence on why it's a good next step after this path"),
+});
+
+/** For a career transition: something the learner already does that carries over to the new career. */
+export const TransferableSkillSchema = z.object({
+  skill: z.string().min(2).max(80).describe("A specific skill or knowledge from the current career, e.g. 'Signal processing and filtering'"),
+  use: z.string().min(5).max(220).describe("One sentence on how it's used in the new career, e.g. 'Feature engineering for audio and sensor data'"),
 });
 
 /** Fields every stage has, in all versions of the data. */
@@ -90,6 +114,15 @@ export const GeneratedPathSchema = PathCore.extend({
     .describe("3 skills to learn after finishing this path: deeper, neighbouring or applied skills that build on it"),
 });
 
+/** The career transition path the AI must return: a learning path plus what already carries over. */
+export const GeneratedTransitionSchema = GeneratedPathSchema.extend({
+  transferableSkills: z
+    .array(TransferableSkillSchema)
+    .min(2)
+    .max(5)
+    .describe("3-5 specific skills from the current career that carry over, each with how it's used in the new career"),
+});
+
 /**
  * Cleans up an AI-generated path before validation, so small mistakes don't fail the whole path:
  * - removes anything only hand-verified or server-added data may contain (`featured` links, per-stage `videos`,
@@ -134,6 +167,13 @@ export function repairGeneratedPath(raw: unknown): unknown {
   }
   path.pitfalls = trim(path.pitfalls, 3);
   path.courses = trim(path.courses, 6);
+  // Transferable skills are optional when stored, so drop bad ones too.
+  if (Array.isArray(path.transferableSkills)) {
+    path.transferableSkills = path.transferableSkills.filter((t) => TransferableSkillSchema.safeParse(t).success).slice(0, 5);
+    if ((path.transferableSkills as unknown[]).length === 0) delete path.transferableSkills;
+  } else {
+    delete path.transferableSkills;
+  }
   // Next topics are optional when stored, so drop bad ones instead of failing the whole path.
   if (Array.isArray(path.nextTopics)) {
     path.nextTopics = path.nextTopics.filter((t) => NextTopicSchema.safeParse(t).success).slice(0, 3);
@@ -196,6 +236,8 @@ export const LearningPathSchema = PathCore.extend({
     .array(z.object({ title: z.string().max(200), url: z.url({ protocol: /^https$/ }) }))
     .max(6)
     .optional(),
+  /** Career transitions only: what the learner already brings to the new career. */
+  transferableSkills: z.array(TransferableSkillSchema).optional(),
   /** What to learn after this path (AI-written; older paths fall back to `suggestNextTopics`). */
   nextTopics: z.array(NextTopicSchema).optional(),
   featured: z
@@ -208,6 +250,7 @@ export const LearningPathSchema = PathCore.extend({
 export type QuizQuestion = z.infer<typeof QuizQuestionSchema>;
 export type CourseLink = z.infer<typeof CourseLinkSchema>;
 export type NextTopicItem = z.infer<typeof NextTopicSchema>;
+export type TransferableSkill = z.infer<typeof TransferableSkillSchema>;
 export type FeaturedVideo = z.infer<typeof FeaturedVideoSchema>;
 export type FeaturedCourse = z.infer<typeof FeaturedCourseSchema>;
 export type LearningPath = z.infer<typeof LearningPathSchema>;

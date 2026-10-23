@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { PathRequest } from "@/lib/schema";
 import { suggestSpelling } from "@/lib/spelling";
 import { checkTopic, skillFromTopic, type TopicRefusal } from "@/lib/topic";
+import { TopicRefusalNote } from "./TopicRefusalNote";
 
 const field =
   "rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-900";
@@ -109,34 +110,15 @@ export function PathForm({
       />
 
       {refusal && (
-        <div
-          role="status"
-          className={`rounded-xl border p-4 ${
-            refusal.reason === "self-harm"
-              ? "border-indigo-200 bg-indigo-50 dark:border-indigo-900 dark:bg-indigo-950/40"
-              : "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40"
-          }`}
-        >
-          <p className="text-base">{refusal.message}</p>
-          <p className="mt-2 text-xs text-zinc-500">{refusal.reason === "self-harm" ? "If you'd like something calming to learn:" : "Try one of these instead:"}</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {refusal.alternatives.map((alt) => (
-              <button
-                key={alt}
-                type="button"
-                onClick={() => {
-                  setRefusal(null);
-                  setTopic(alt);
-                  onTopicChange?.(alt);
-                  send(alt);
-                }}
-                className="rounded-full border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:border-indigo-400 hover:text-indigo-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:text-indigo-300"
-              >
-                {alt}
-              </button>
-            ))}
-          </div>
-        </div>
+        <TopicRefusalNote
+          refusal={refusal}
+          onPick={(alt) => {
+            setRefusal(null);
+            setTopic(alt);
+            onTopicChange?.(alt);
+            send(alt);
+          }}
+        />
       )}
 
       {suggestion && (
