@@ -69,6 +69,9 @@ const PRETEND = /\b(?:games?|gaming|minecraft|roblox|unity|unreal|blender|3d mod
  * @returns {RegExp} Matches when any of them does.
  */
 const anyOf = (...patterns: RegExp[]) => new RegExp(patterns.map((p) => p.source).join("|"));
+/** Who could be hurt: people in general, children, women and men, and the people in someone's life. */
+const VICTIM =
+  "(?:a |an |the |my |his |her |their |some |little |young |small |other |another |random |innocent )?(?:someone\\w*|somebody\\w*|anyone|anybody|a person|persons?|people|humans?|kids?|child|children|girls?|boys?|wom[ae]n|ladies|lady|m[ae]n|guys?|babies|baby|toddlers?|infants?|minors?|teens?|teenagers?|students?|elderly|old people|classmates?|strangers?|wife|husband|partner|parents?|mom|mum|mother|dad|father|brother|sister|son|daughter|teacher|friend|boss|ex|girlfriend|boyfriend|neighbou?rs?|maid|servant|family|wives|husbands)";
 
 const RULES: Rule[] = [
   {
@@ -105,11 +108,33 @@ const RULES: Rule[] = [
     alternatives: ["Cybersecurity", "Malware analysis", "Ethical hacking"],
   },
   {
+    // Rape, sexual assault and abuse, trafficking. Checked before "hurting people" so it gets its own message.
+    pattern: new RegExp(
+      `\\b(?:rap(?:e|ed|es|ing|ist|ists)|sexual(?:ly)? (?:assault\\w*|abus\\w*|harass\\w*)|molest\\w*|grop(?:e|ed|es|ing)|date rape|roofie\\w*|spik(?:e|ing) (?:a |her |his |someone'?s )?drinks?|drug(?:ging)? (?:a |her |someone'?s )?drinks?|upskirt\\w*|human trafficking|child trafficking|traffick\\w* (?:girls?|women|kids?|children|people)|child marriage|child brides?)\\b|\\bgroom(?:ing)?\\W+(?:a |the )?(?:${VICTIM})\\b`,
+    ),
+    unless: /\b(?:prevent\w*|awareness|survivors?|support\w*|recover\w*|heal\w*|report\w*|law|laws|legal|consent|protect\w*|spot\w*|recogni[sz]\w*|signs of|safety|educat\w*|counsel\w*|history of|helping|stop\w*|crisis|trauma|seeds?|oilseeds?|canola|mustard|farming)\b/,
+    message: "Ladderly can't make a path for that. Sexual violence and abuse cause serious harm.",
+    alternatives: ["Self-defence", "Psychology", "Women's safety"],
+  },
+  {
     // Hurting people.
-    pattern: /\b(?:kill|killing|murder\w*|poison\w*|hurt|hurting|harm|harming|attack|attacking|beat up|kidnap\w*|torture|abuse|stab\w*)\b(?:\W+[\w']+){0,3}?\W+(?:someone|somebody|a person|people|humans?|my (?:\w+ )?(?:wife|husband|parents?|mom|mum|dad|father|mother|brother|sister|teacher|classmate|friend|boss|ex|girlfriend|boyfriend|neighbou?r)|kids?|children|a child|students?)\b|\b(?:get away with murder|commit (?:a )?murder|school shooting|mass shooting|become a terrorist|join (?:isis|al[- ]?qaeda)|terror attack)\b/,
-    unless: anyOf(/\b(?:prevent\w*|protect\w*|self[- ]defen[cs]e|stop\w*|recogni[sz]\w*|report\w*|history of|awareness)\b/, PRETEND),
+    pattern: new RegExp(
+      `\\b(?:kill\\w*|murder\\w*|poison\\w*|hurt\\w*|harm|harms|harmed|harming|attack\\w*|beat|beats|beating|beat up|hit|hitting|slap\\w*|punch|punching|kick|kicking|choke|choking|strangl\\w*|kidnap\\w*|abduct\\w*|tortur\\w*|abus\\w*|stab\\w*|burn|burns|burned|burnt|burning|drown|drowning|starv\\w*|bully\\w*|threaten\\w*|blackmail\\w*)\\b(?:\\W+[\\w']+){0,3}?\\W+(?:${VICTIM})\\b|\\b(?:get away with murder|commit (?:a )?murder|school shooting|mass shooting|shoot up (?:a |my |the )?(?:school|college|class)|become a terrorist|join (?:isis|al[- ]?qaeda)|terror attacks?|honou?r killing|acid attack\\w*)\\b`,
+    ),
+    unless: anyOf(
+      /\b(?:prevent\w*|protect\w*|self[- ]defen[cs]e|stop\w*|recogni[sz]\w*|report\w*|history of|awareness|first aid|heart attacks?|panic attacks?|asthma attacks?|feelings|survivors?|signs of|deal with|cope|coping|helping|safety|anti[- ]\w+|fat|calories|belly)\b/,
+      /\b(?:at|in) (?:chess|carrom|ludo|cards|games?|video games?|sports?|cricket|football|badminton|tennis|a race|races|running|arguments?|debates?|exams?|quiz\w*)\b/,
+      PRETEND,
+    ),
     message: "Ladderly can't make a path for hurting anyone.",
     alternatives: ["Self-defence", "First aid", "Conflict resolution"],
+  },
+  {
+    // Cruelty to animals.
+    pattern: /\b(?:tortur\w*|abus\w*|hurt\w*|poison\w*|torment\w*|kill\w*|beat\w*|burn\w*|drown\w*|starv\w*)\b(?:\W+[\w']+){0,2}?\W+(?:animals?|pets?|dogs?|cats?|puppies|puppy|kittens?|stray\w*)\b/,
+    unless: /\b(?:prevent\w*|protect\w*|rescu\w*|report\w*|awareness|stop\w*|signs of|care|caring|vet\w*|humane\w*|euthanas\w*|fleas?|ticks?|worms?|parasites?|pests?)\b/,
+    message: "Ladderly can't make a path for hurting animals.",
+    alternatives: ["Animal care", "Veterinary science", "Dog training"],
   },
   {
     // Fraud, scams and forgery.
