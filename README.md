@@ -10,7 +10,7 @@ Type any skill or topic ("guitar", "machine learning", "public speaking") and ge
 - Finish a path and get three suggestions for what to learn next, each one click away
 - Free demo paths for CBSE/NCERT Class 11–12 maths, physics, chemistry, biology and computer science
 - Optional web search (your own Tavily or Brave key) for up-to-date paths with real links
-- A free open-source model that runs right in your browser (WebGPU), and one-click Ollama setup in the Windows app
+- One-click setup of a free local AI model (Ollama) in the Windows app
 - A calm, student-friendly layout: a personal welcome ("Welcome back, Alex"), your streak, today's goal and the one next step. A GitHub-style heatmap, ❄️ rest days and badges are one click away under "My progress"
 - Paths and progress are saved in your browser (localStorage)
 - Live streaming preview while the path is generated, and friendly errors with a retry button
@@ -187,8 +187,7 @@ src/
     VideoCard.tsx       # Video card with hover zoom and rotating in-video frames
     Disclosure.tsx      # Accessible animated dropdown
     StageQuiz.tsx       # Per-stage multiple-choice quiz
-    AiSettingsDialog.tsx  # AI engine settings: demo, in-browser model, local models (Ollama), Claude, OpenAI
-    BrowserModelPanel.tsx # Pick, download and remove the in-browser model
+    AiSettingsDialog.tsx  # AI engine settings: demo, local models (Ollama), Claude, OpenAI
     OllamaSetupCard.tsx # "Set up for me": installs Ollama and a model (desktop app)
     ReadyPaths.tsx      # "Ready-made paths" picker: category → grade → topic
     Logo.tsx            # The Ladderly logo as an inline SVG
@@ -230,6 +229,7 @@ src/
     readyPaths.ts       # The ready-made path catalogue for the picker
     countVisit.ts       # Counts this browser once as a web learner
     spelling.ts         # "Did you mean…?" typo check for topics
+    topic.ts            # Turns "How to learn Python?" into "Python", and turns down harmful topics
     topicTheme.ts       # Topic keywords → background colours and symbols
 ```
 

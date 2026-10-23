@@ -1,5 +1,3 @@
-import { useSyncExternalStore } from "react";
-
 /** Update progress reported by the desktop app (see electron/updater.js). */
 export type UpdateState = {
   status: "idle" | "checking" | "up-to-date" | "available" | "downloading" | "installing" | "error";
@@ -47,15 +45,4 @@ declare global {
  */
 export function desktopBridge(): DesktopBridge | null {
   return typeof window !== "undefined" && window.ladderly?.desktop ? window.ladderly : null;
-}
-
-/** The bridge never appears or disappears while the page is open, so there's nothing to subscribe to. */
-const noSubscribe = () => () => {};
-
-/**
- * Whether the page is running inside the Windows app. Safe for server rendering (false there) and hydration.
- * @returns {boolean} True in the desktop app.
- */
-export function useIsDesktop(): boolean {
-  return useSyncExternalStore(noSubscribe, () => desktopBridge() !== null, () => false);
 }

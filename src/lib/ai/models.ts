@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /** The AI engines Ladderly can use to write paths. */
-export const PROVIDER_IDS = ["auto", "demo", "browser", "ollama", "anthropic", "openai"] as const;
+export const PROVIDER_IDS = ["auto", "demo", "ollama", "anthropic", "openai"] as const;
 export type ProviderId = (typeof PROVIDER_IDS)[number];
 
 /** Claude models offered for a user's own Anthropic key. Claude Opus 5 is the default. */
@@ -11,42 +11,6 @@ export const ANTHROPIC_MODELS = [
   { id: "claude-haiku-4-5", label: "Claude Haiku 4.5", note: "Fastest and cheapest" },
 ] as const;
 export type AnthropicModelId = (typeof ANTHROPIC_MODELS)[number]["id"];
-
-/**
- * Open-source models that run inside the browser with WebGPU (via WebLLM), smallest last. They download once and
- * stay in the browser's storage. `f16`/`f32` are WebLLM model ids: the f16 build is used when the graphics chip
- * supports 16-bit maths, otherwise the f32 build (same download size). `downloadGB` is the measured weight size.
- */
-export const BROWSER_MODELS = [
-  {
-    id: "qwen2.5-3b",
-    label: "Qwen 2.5 3B",
-    maker: "Alibaba",
-    f16: "Qwen2.5-3B-Instruct-q4f16_1-MLC",
-    f32: "Qwen2.5-3B-Instruct-q4f32_1-MLC",
-    downloadGB: 1.74,
-    note: "Best paths; for most laptops and desktops",
-  },
-  {
-    id: "qwen2.5-1.5b",
-    label: "Qwen 2.5 1.5B",
-    maker: "Alibaba",
-    f16: "Qwen2.5-1.5B-Instruct-q4f16_1-MLC",
-    f32: "Qwen2.5-1.5B-Instruct-q4f32_1-MLC",
-    downloadGB: 0.87,
-    note: "Good balance; for older laptops and phones",
-  },
-  {
-    id: "llama3.2-1b",
-    label: "Llama 3.2 1B",
-    maker: "Meta",
-    f16: "Llama-3.2-1B-Instruct-q4f16_1-MLC",
-    f32: "Llama-3.2-1B-Instruct-q4f32_1-MLC",
-    downloadGB: 0.7,
-    note: "Lightest; quickest to download, simpler paths",
-  },
-] as const;
-export type BrowserModelId = (typeof BROWSER_MODELS)[number]["id"];
 
 /** OpenAI models offered for a user's own OpenAI key (current models as listed in OpenAI's docs). */
 export const OPENAI_MODELS = [
@@ -121,8 +85,8 @@ export const OLLAMA_MODEL_NAME = /^[a-z0-9][\w.\-/]{0,63}(:[\w.\-]{1,40})?$/i;
  * (if any) is used. Everything is length- and pattern-limited before the server uses it.
  */
 export const AiSettingsSchema = z.object({
-  provider: z.enum(PROVIDER_IDS).default("auto"),
-  browserModel: z.enum(BROWSER_MODELS.map((m) => m.id) as [BrowserModelId, ...BrowserModelId[]]).optional(),
+  // An engine Ladderly no longer offers (such as the removed in-browser model) falls back to the default.
+  provider: z.enum(PROVIDER_IDS).catch("auto"),
   ollamaModel: z.string().regex(OLLAMA_MODEL_NAME).optional(),
   anthropicKey: z.string().trim().max(300).optional(),
   anthropicModel: z.enum(ANTHROPIC_MODELS.map((m) => m.id) as [AnthropicModelId, ...AnthropicModelId[]]).optional(),
@@ -158,8 +122,6 @@ export function engineLabel(settings: AiSettings, status: AiStatus | null): stri
   switch (settings.provider) {
     case "demo":
       return "Free demo";
-    case "browser":
-      return `${BROWSER_MODELS.find((m) => m.id === settings.browserModel)?.label ?? "Open-source model"} (in browser)`;
     case "ollama": {
       const m = OLLAMA_CATALOG.find((c) => c.id === settings.ollamaModel);
       return `${m?.label ?? settings.ollamaModel ?? "Local model"} (local)`;

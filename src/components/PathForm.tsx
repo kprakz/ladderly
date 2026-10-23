@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { PathRequest } from "@/lib/schema";
 import { suggestSpelling } from "@/lib/spelling";
+import { checkTopic, skillFromTopic, type TopicRefusal } from "@/lib/topic";
 
 const field =
   "rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-900";
@@ -10,7 +11,9 @@ const field =
 /**
  * Form for the topic, then a clear "Personalise" button for the optional level, hours per week and goal, then
  * "Find my path" (which shows a spinner, not a different label, while a path is being written). If the topic looks
- * misspelled ("puthon"), it first asks "Did you mean python?" and lets the learner pick either spelling.
+ * misspelled ("puthon"), it first asks "Did you mean python?" and lets the learner pick either spelling. Questions
+ * like "How to learn Python?" become just the skill ("Python"), and topics Ladderly won't make a path for (see
+ * lib/topic.ts) get a short explanation and safer topics to try instead.
  * @param {Object} props
  * @param {(req: PathRequest) => void} props.onSubmit Called with the cleaned-up request when the form is submitted.
  * @param {boolean} props.disabled Disables the submit button (while a path is being generated).
@@ -35,6 +38,8 @@ export function PathForm({
   const [suggestion, setSuggestion] = useState<string | null>(null);
   /** Bumped when Enter is pressed while the question is showing, to replay a small "please choose" nudge. */
   const [nudge, setNudge] = useState(0);
+  /** Why the topic was turned down, shown instead of making a path. */
+  const [refusal, setRefusal] = useState<TopicRefusal | null>(null);
   const optionCount = [level, hours, goal].filter(Boolean).length;
 
   /**
@@ -46,7 +51,7 @@ export function PathForm({
     setSuggestion(null);
     const hoursNum = Number(hours);
     onSubmit({
-      topic: text.trim(),
+      topic: skillFromTopic(text),
       level: (level || undefined) as PathRequest["level"],
       hoursPerWeek: hours && hoursNum > 0 ? Math.min(80, Math.round(hoursNum)) : undefined,
       goal: (goal || undefined) as PathRequest["goal"],
@@ -67,6 +72,9 @@ export function PathForm({
       setNudge((n) => n + 1);
       return;
     }
+    const turnedDown = checkTopic(topic);
+    setRefusal(turnedDown);
+    if (turnedDown) return;
     const fix = suggestSpelling(topic);
     if (fix) setSuggestion(fix);
     else send(topic);
@@ -91,6 +99,7 @@ export function PathForm({
           setTopic(e.target.value);
           onTopicChange?.(e.target.value);
           setSuggestion(null);
+          setRefusal(null);
         }}
         placeholder='What do you want to learn? e.g. "guitar", "machine learning"'
         aria-label="Skill or topic"
@@ -98,6 +107,37 @@ export function PathForm({
         className={`${field} w-full py-3 text-base`}
         autoFocus
       />
+
+      {refusal && (
+        <div
+          role="status"
+          className={`rounded-xl border p-4 ${
+            refusal.reason === "self-harm"
+              ? "border-indigo-200 bg-indigo-50 dark:border-indigo-900 dark:bg-indigo-950/40"
+              : "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40"
+          }`}
+        >
+          <p className="text-base">{refusal.message}</p>
+          <p className="mt-2 text-xs text-zinc-500">{refusal.reason === "self-harm" ? "If you'd like something calming to learn:" : "Try one of these instead:"}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {refusal.alternatives.map((alt) => (
+              <button
+                key={alt}
+                type="button"
+                onClick={() => {
+                  setRefusal(null);
+                  setTopic(alt);
+                  onTopicChange?.(alt);
+                  send(alt);
+                }}
+                className="rounded-full border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:border-indigo-400 hover:text-indigo-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:text-indigo-300"
+              >
+                {alt}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {suggestion && (
         <div

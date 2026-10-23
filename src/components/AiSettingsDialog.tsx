@@ -12,8 +12,6 @@ import {
   recommendOllamaModel,
 } from "@/lib/ai/models";
 import { updateAiSettings, useAiSettings } from "@/lib/ai/settingsStore";
-import { useIsDesktop } from "@/lib/desktop";
-import { BrowserModelPanel } from "./BrowserModelPanel";
 import { OllamaSetupCard } from "./OllamaSetupCard";
 
 type Props = { open: boolean; onClose: () => void; status: AiStatus | null; onRefreshStatus: () => void };
@@ -34,7 +32,6 @@ type PullState = { model: string; status: string; completed: number; total: numb
 export function AiSettingsDialog({ open, onClose, status, onRefreshStatus }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const settings = useAiSettings();
-  const isDesktop = useIsDesktop();
 
   useEffect(() => {
     const dialog = ref.current;
@@ -49,7 +46,6 @@ export function AiSettingsDialog({ open, onClose, status, onRefreshStatus }: Pro
   const options: { id: ProviderId; title: string; subtitle: string; hidden?: boolean }[] = [
     { id: "auto", title: "Claude (set up on this server)", subtitle: "Uses the API key configured for this app", hidden: status?.serverDefault !== "claude" },
     { id: "demo", title: "Free demo", subtitle: "Built-in sample paths, no setup" },
-    { id: "browser", title: "Open-source model in your browser", subtitle: "Free and private: runs on this device, no install", hidden: isDesktop },
     { id: "ollama", title: "Local open-source model", subtitle: "Free and private, runs on your computer (Ollama)" },
     { id: "anthropic", title: "Claude", subtitle: "Your Anthropic API key, best quality" },
     { id: "openai", title: "OpenAI GPT", subtitle: "Your OpenAI API key" },
@@ -122,7 +118,6 @@ export function AiSettingsDialog({ open, onClose, status, onRefreshStatus }: Pro
             general template. For a detailed path on any topic, use a local model or your own API key.
           </p>
         )}
-        {current === "browser" && <BrowserModelPanel />}
         {current === "ollama" && status?.local && <OllamaPanel status={status} onRefresh={onRefreshStatus} />}
         {current === "anthropic" && <AnthropicPanel hosted={status !== null && !status.local} />}
         {current === "openai" && <OpenAiPanel hosted={status !== null && !status.local} />}

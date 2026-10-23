@@ -2,6 +2,7 @@ import { AiSettingsSchema, type AiSettings } from "@/lib/ai/models";
 import { getDemoPath, isDemoMode } from "@/lib/demo";
 import { buildSystemPrompt, buildUserPrompt } from "@/lib/prompt";
 import { type LearningPath, LearningPathSchema, type PathRequest, PathRequestSchema, repairGeneratedPath, type StreamEvent } from "@/lib/schema";
+import { checkTopic } from "@/lib/topic";
 import {
   describeLlmError,
   generateWithClaude,
@@ -34,6 +35,9 @@ export async function POST(req: Request): Promise<Response> {
   if (!parsed.success) {
     return Response.json({ error: parsed.error.issues[0]?.message ?? "Invalid request" }, { status: 400 });
   }
+  // Turned down here too, whatever the engine, in case a request skips the form's check.
+  const refusal = checkTopic(String(body?.topic ?? ""));
+  if (refusal) return Response.json({ error: refusal.message }, { status: 400 });
   const ai = AiSettingsSchema.safeParse(body?.ai ?? {});
   if (!ai.success) return Response.json({ error: "Invalid AI settings. Open AI settings and check them." }, { status: 400 });
 
@@ -145,9 +149,6 @@ function chooseEngine(ai: AiSettings): Engine | "demo" | string {
   switch (ai.provider) {
     case "demo":
       return "demo";
-    case "browser":
-      // Runs entirely in the browser (see lib/ai/browserEngine.ts); it never reaches the server.
-      return "The in-browser model runs on your device, not on the server. Reload the page and try again.";
     case "ollama": {
       if (!isLocalServer()) {
         return "Local models only work in the Ladderly desktop app (or when you run Ladderly on your own computer). Choose another engine in AI settings.";

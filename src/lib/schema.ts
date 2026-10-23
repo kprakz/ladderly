@@ -1,9 +1,10 @@
 import { z } from "zod";
 import { PLATFORM_IDS } from "./platforms";
+import { skillFromTopic } from "./topic";
 
-/** What the browser sends to /api/path. */
+/** What the browser sends to /api/path. The topic becomes the skill itself: "How to learn Python?" → "Python". */
 export const PathRequestSchema = z.object({
-  topic: z.string().trim().min(1, "Enter a skill or topic").max(120),
+  topic: z.string().trim().min(1, "Enter a skill or topic").max(120).transform(skillFromTopic),
   level: z.enum(["none", "some", "intermediate"]).optional(),
   hoursPerWeek: z.number().int().min(1).max(80).optional(),
   goal: z.enum(["hobby", "job", "exam"]).optional(),
